@@ -2,12 +2,13 @@
 #define GENERATOR_HPP
 
 #include <armadillo>
+#include <filesystem>
 #include <math.h>
 #include <complex>
 #include "CustomRandom.hpp"
 #include "ParamDict.hpp"
-#include "Observer.hpp"
-#include "Solver.hpp"
+
+namespace fs = std::filesystem;
 
 class Generator
 {
@@ -16,10 +17,9 @@ private:
 public:
     ParamDict params;
     arma::field<arma::cx_vec> xi_q;
-    arma::field<arma::vec> xi_r;
+    //arma::field<arma::vec> xi_r;
     gsl_rng *rg;
 
-    double t = 0;
     double dx = 1.0;
     double tau = 1.0;
     double lambda = 1.0;
@@ -40,10 +40,16 @@ public:
     ~Generator();
 
     //take inverse fourier transform
-    void compute_r_from_q();
+    arma::field<arma::vec> get_xi_r();
 
     //Get anticorrelated gaussian random number in fourier space
     std::complex<double> get_rnd_gauss_fourier(int i, int j, int k);
+
+    //Advance time
+    void step(double dt);
+
+    //Save noise field to file
+    void save_field(arma::field<arma::vec> &theField, std::string out_dir, double t, double dt);
 };
 
 #endif
