@@ -25,9 +25,9 @@ public:
     double lambda = 1.0;
     double D = 1.0;
 
-    int nx = 10;
-    int ny = 10;
-    int nz = 10;
+    int nx = 4;
+    int ny = 4;
+    int nz = 4;
 
     double Lx, Ly, Lz;
 
@@ -40,7 +40,7 @@ public:
     ~Generator();
 
     //take inverse fourier transform
-    arma::field<arma::vec> get_xi_r();
+    arma::field<arma::cx_vec> get_xi_r();
 
     //Get anticorrelated gaussian random number in fourier space
     std::complex<double> get_rnd_gauss_fourier(int i, int j, int k);
@@ -49,7 +49,7 @@ public:
     void step(double dt);
 
     //Save noise field to file
-    void save_field(arma::field<arma::vec> &theField, std::string out_dir, double t, double dt);
+    void save_field(arma::field<arma::cx_vec> &theField, std::string out_dir, double t, double dt);
 };
 
 #endif

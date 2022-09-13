@@ -33,37 +33,52 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
     rg = the_rg;
 
     //Initialize q field to ensure stationarity
+    //create a cube to track which field values have been filled
+    arma::cube is_filled(nx, ny, nz, arma::fill::zeros);
     for(int i=0; i<nx; i++)
     {
         for(int j=0; j<ny; j++)
         {
             for(int k=0; k<nz; k++)
             {
-                double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly) + k*k/(Lz*Lz));
-                double prefactor = sqrt(D/tau)/(1+lambda*lambda*q_sq);
-                for(int mu=0; mu<3; mu++)
+                if(is_filled((nx-i)%nx,(ny-j)%ny,(nz-k)%nz)==1)
+                {                    
+                    for(int mu=0; mu<3; mu++)
+                    {
+                        xi_q(i,j,k)(mu) = std::conj(xi_q((nx-i)%nx,(ny-j)%ny,(nz-k)%nz)(mu));
+                    }
+                    is_filled(i,j,k)=1.0;
+                }
+                else
                 {
-                    xi_q(i,j,k)(mu) = prefactor*get_rnd_gauss_fourier(i,j,k);
+                    double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly) + k*k/(Lz*Lz));
+                    double prefactor = sqrt(D/tau)/(1+lambda*lambda*q_sq);
+                    for(int mu=0; mu<3; mu++)
+                    {
+                        xi_q(i,j,k)(mu) = prefactor*get_rnd_gauss_fourier(i,j,k);
+                    }
+                    is_filled(i,j,k)=1.0;
                 }
             }
         }
     }
+    std::cout << "Initialized generator." << std::endl;
 }
 
 Generator::~Generator() {}
 
-arma::field<arma::vec> Generator::get_xi_r()
+arma::field<arma::cx_vec> Generator::get_xi_r()
 {
     using namespace std::complex_literals;
 
-    arma::field<arma::vec> xi_r(nx, ny, nz);
+    arma::field<arma::cx_vec> xi_r(nx, ny, nz);
     for(int i=0; i<nx; i++)
     {
         for(int j=0; j<ny; j++)
         {
             for(int k=0; k<nz; k++)
             {
-                xi_r(i,j,k) = arma::vec(3, arma::fill::zeros);
+                xi_r(i,j,k) = arma::cx_vec(3, arma::fill::zeros);
             }
         }
     }
@@ -83,11 +98,13 @@ arma::field<arma::vec> Generator::get_xi_r()
                         {
                             for(int q3=0; q3<nz; q3++)
                             {
-                                std::complex<double> update = xi_q(q1,q2,q3)(mu)*std::exp(-2*M_PI*(
+                                std::complex<double> update = xi_q(q1,q2,q3)(mu)*std::exp(-2*M_PI*1i*(
                                     (1.0*i*q1)/(1.0*nx) +
                                     (1.0*j*q2)/(1.0*ny) +
                                     (1.0*k*q3)/(1.0*nz)));
-                                xi_r(i,j,k)(mu) += update.real();
+                                //Check that imaginary part is zero
+                                //if(update.imag()>1e-3) std::cout << "imaginary part:" << update.imag() << std::endl;
+                                xi_r(i,j,k)(mu) += update;//.real();
                             }
                         }
                     }
@@ -110,7 +127,7 @@ std::complex<double> Generator::get_rnd_gauss_fourier(int i, int j, int k)
         (i==nx/2 && j==ny/2 && k==0) ||
         (i==nx/2 && j==0 && k==nz/2) ||
         (i==0 && j==ny/2 && k==nz/2) ||
-        (i==nx/2 && j==nz/2 && k==nz/2) )
+        (i==nx/2 && j==ny/2 && k==nz/2) )
     {
         return gsl_ran_gaussian(rg, 1.0) + 0i;
     }
@@ -134,17 +151,44 @@ void Generator::step(double dt)
         }
     }
 
+    arma::cube is_filled(nx, ny, nz, arma::fill::zeros);
     for(int i=0; i<nx; i++)
     {
         for(int j=0; j<ny; j++)
         {
             for(int k=0; k<nz; k++)
             {
-                double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly) + k*k/(Lz*Lz));
-                double prefactor = sqrt(2*D*dt)/tau/(1+lambda*lambda*q_sq);
+                if(is_filled((nx-i)%nx,(ny-j)%ny,(nz-k)%nz)==1)
+                {
+                    for(int mu=0; mu<3; mu++)
+                    {
+                        noise_incr(i,j,k)(mu) = std::conj(noise_incr((nx-i)%nx,(ny-j)%ny,(nz-k)%nz)(mu));
+                    }
+                    is_filled(i,j,k)=1.0;
+                }
+                else
+                {
+                    double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly) + k*k/(Lz*Lz));
+                    double prefactor = sqrt(2*D*dt)/tau/(1+lambda*lambda*q_sq);
+                    for(int mu=0; mu<3; mu++)
+                    {
+                        noise_incr(i,j,k)(mu) = prefactor*get_rnd_gauss_fourier(i,j,k);
+                    }
+                    is_filled(i,j,k)=1.0;
+                }
+            }
+        }
+    }
+
+    for(int i=0; i<nx; i++)
+    {
+        for(int j=0; j<ny; j++)
+        {
+            for(int k=0; k<nz; k++)
+            {
                 for(int mu=0; mu<3; mu++)
                 {
-                    xi_q(i,j,k)(mu) = prefactor*get_rnd_gauss_fourier(i,j,k);
+                    xi_q(i,j,k)(mu) += (-dt)/tau*xi_q(i,j,k)(mu) + noise_incr(i,j,k)(mu);
                 }
             }
         }
@@ -152,7 +196,7 @@ void Generator::step(double dt)
 
 }
 
-void Generator::save_field(arma::field<arma::vec> &theField, std::string out_dir, double t, double dt)
+void Generator::save_field(arma::field<arma::cx_vec> &theField, std::string out_dir, double t, double dt)
 {
     std::ofstream ofile;
     ofile.open(out_dir + "/noise_" + std::to_string(int(t)) + ".txt" );
