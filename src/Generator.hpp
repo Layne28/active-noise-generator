@@ -17,7 +17,6 @@ private:
 public:
     ParamDict params;
     arma::field<arma::cx_vec> xi_q;
-    //arma::field<arma::vec> xi_r;
     gsl_rng *rg;
 
     double dx = 1.0;

@@ -16,7 +16,6 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
     Lz = nz*dx;
 
     xi_q = arma::field<arma::cx_vec>(nx, ny, nz);
-    //xi_r = arma::field<arma::vec>(nx, ny, nz);
     for(int i=0; i<nx; i++)
     {
         for(int j=0; j<ny; j++)
@@ -24,7 +23,6 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
             for(int k=0; k<nz; k++)
             {
                 xi_q(i,j,k) = arma::cx_vec(3, arma::fill::zeros);
-                //xi_r(i,j,k) = arma::vec(3, arma::fill::zeros);
             }
         }
     }
@@ -52,7 +50,7 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
                 else
                 {
                     double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly) + k*k/(Lz*Lz));
-                    double prefactor = sqrt(D/tau)/(1+lambda*lambda*q_sq);
+                    double prefactor = sqrt(D/tau)*sqrt(Lx*Ly*Lz)/(1+lambda*lambda*q_sq);
                     for(int mu=0; mu<3; mu++)
                     {
                         xi_q(i,j,k)(mu) = prefactor*get_rnd_gauss_fourier(i,j,k);
@@ -104,11 +102,11 @@ arma::field<arma::cx_vec> Generator::get_xi_r()
                                     (1.0*k*q3)/(1.0*nz)));
                                 //Check that imaginary part is zero
                                 //if(update.imag()>1e-3) std::cout << "imaginary part:" << update.imag() << std::endl;
-                                xi_r(i,j,k)(mu) += update;//.real();
+                                xi_r(i,j,k)(mu) += update.real();
                             }
                         }
                     }
-                    //xi_r(i,j,k) *= 1.0/(8*M_PI*M_PI*M_PI);
+                    xi_r(i,j,k)(mu) *= 1.0/(Lx*Ly*Lz);
                 }
             }
         }
@@ -169,7 +167,7 @@ void Generator::step(double dt)
                 else
                 {
                     double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly) + k*k/(Lz*Lz));
-                    double prefactor = sqrt(2*D*dt)/tau/(1+lambda*lambda*q_sq);
+                    double prefactor = sqrt(2*D*dt)*sqrt(Lx*Ly*Lz)/tau/(1+lambda*lambda*q_sq);
                     for(int mu=0; mu<3; mu++)
                     {
                         noise_incr(i,j,k)(mu) = prefactor*get_rnd_gauss_fourier(i,j,k);
@@ -200,9 +198,12 @@ void Generator::save_field(arma::field<arma::cx_vec> &theField, std::string out_
 {
     std::ofstream ofile;
     ofile.open(out_dir + "/noise_" + std::to_string(int(t)) + ".txt" );
-    ofile << "dimensions: " << nx << " " << ny << " " << nz << std::endl;
+    ofile << "nx: " << nx << std::endl;
+    ofile << "ny: " << ny << std::endl;
+    ofile << "nz: " << nz << std::endl;
     ofile << "dx: " << dx << std::endl;
     ofile << "time: " << (t*dt) << std::endl;
+    ofile << "dt: " << dt << std::endl;
     ofile << "lambda: " << lambda << std::endl;
     ofile << "tau: " << tau << std::endl;
     ofile << "D: " << D << std::endl;
@@ -213,7 +214,7 @@ void Generator::save_field(arma::field<arma::cx_vec> &theField, std::string out_
         {
             for(int k=0; k<nz; k++)
             {
-                ofile << i*dx << " " << j*dx << " " << k*dx << " " << theField(i,j,k)(0) << " " << theField(i,j,k)(1) << " " << theField(i,j,k)(2) << std::endl;
+                ofile << i*dx << " " << j*dx << " " << k*dx << " " << theField(i,j,k)(0).real() << " " << theField(i,j,k)(1).real() << " " << theField(i,j,k)(2).real() << std::endl;
             }
         }
     }

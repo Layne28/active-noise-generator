@@ -12,13 +12,18 @@ OBJ_DIR := build
 BIN_DIR := bin
 TEST_SRC_DIR := test/src
 TEST_OBJ_DIR := test/build
+ANALYSIS_SRC_DIR := analysis/src
+ANALYSIS_OBJ_DIR := analysis/build
 
 EXECUTABLE := active_noise_generator
 TEST_EXECUTABLE := test_active_noise_generator
+ANALYSIS_EXECUTABLE := analyze
 SOURCES := $(wildcard $(SRC_DIR)/*.cpp)
 TEST_SOURCES := $(wildcard $(TEST_SRC_DIR)/*.cpp)
+ANALYSIS_SOURCES := $(wildcard $(ANALYSIS_SRC_DIR)/*.cpp)
 HEADERS := $(wildcard $(SRC_DIR)/*.hpp)
 TEST_HEADERS := $(wildcard $(TEST_SRC_DIR)/*.hpp)
+ANALYSIS_HEADERS := $(wildcard $(ANALYSIS_SRC_DIR)/*.hpp)
 
 CXX := g++
 
@@ -31,7 +36,7 @@ CXXFLAGS:= -std=c++17 -Wextra -pedantic -Wall -W -Wmissing-declarations -Wuninit
 # but make sure your results are consistent
 # -g includes debugging information. You can also add -pg here for profiling 
 PROFILE=-pg
-OPTFLAGS:=$(PROFILE) -O2
+OPTFLAGS:=$(PROFILE) -O2 #Might try changing to O3 to increase speed
 
 # Flags to pass to the linker; -lm links in the standard c math library
 LDFLAGS:= -fopenmp -lm -lgsl -lgslcblas -llapack -lblas -larmadillo $(PROFILE) -L$(HOME)/lib 
@@ -45,8 +50,11 @@ OBJECTS_NO_MAIN = $(filter-out $(OBJ_DIR)/main.o,$(OBJECTS))
 TEST_OBJECTS := $(patsubst $(TEST_SRC_DIR)/%.cpp,$(TEST_OBJ_DIR)/%.o,$(TEST_SOURCES))
 TEST_OBJECTS += $(OBJECTS_NO_MAIN)
 
+ANALYSIS_OBJECTS := $(patsubst $(ANALYSIS_SRC_DIR)/%.cpp,$(ANALYSIS_OBJ_DIR)/%.o,$(ANALYSIS_SOURCES))
+
 # Default target depends on sources and headers to detect changes
 all: $(SOURCES) $(HEADERS)  $(BIN_DIR)/$(EXECUTABLE)
+analysis: $(ANALYSIS_SOURCES) $(ANALYSIS_HEADERS) $(BIN_DIR)/$(ANALYSIS_EXECUTABLE)
 install: 
 	install bin/* /usr/local/bin/
 test: $(TEST_SOURCES) $(TEST_HEADERS) $(BIN_DIR)/$(TEST_EXECUTABLE)
@@ -57,13 +65,17 @@ $(OBJECTS): $(OBJ_DIR)/%.o : $(SRC_DIR)/%.cpp
 #$(TEST_OBJECTS): $(TEST_OBJ_DIR)/%.o : $(TEST_SRC_DIR)/%.cpp
 $(TEST_OBJ_DIR)/%.o : $(TEST_SRC_DIR)/%.cpp
 	$(CXX) -c $(CXXFLAGS) $< -o $@
+$(ANALYSIS_OBJ_DIR)/%.o : $(ANALYSIS_SRC_DIR)/%.cpp
+	$(CXX) -c $(CXXFLAGS) $< -o $@
 
 # Build the executable by linking all objects
 $(BIN_DIR)/$(EXECUTABLE): $(OBJECTS)
 	$(CXX) $(OBJECTS) $(LDFLAGS) -o $@
 $(BIN_DIR)/$(TEST_EXECUTABLE): $(TEST_OBJECTS)
 	$(CXX) $(TEST_OBJECTS) $(LDFLAGS) -o $@
+$(BIN_DIR)/$(ANALYSIS_EXECUTABLE): $(ANALYSIS_OBJECTS)
+	$(CXX) $(ANALYSIS_OBJECTS) $(LDFLAGS) -o $@
 
 # clean up so we can start over (removes executable!)
 clean:
-	rm -f $(OBJ_DIR)/*.o $(TEST_OBJ_DIR)/*.o $(BIN_DIR)/$(EXECUTABLE) $(BIN_DIR)/$(TEST_EXECUTABLE)
+	rm -f $(OBJ_DIR)/*.o $(TEST_OBJ_DIR)/*.o $(ANALYSIS_OBJ_DIR)/*.o $(BIN_DIR)/$(EXECUTABLE) $(BIN_DIR)/$(TEST_EXECUTABLE) $(BIN_DIR)/$(ANALYSIS_EXECUTABLE)

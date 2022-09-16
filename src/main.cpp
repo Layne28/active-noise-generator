@@ -32,7 +32,7 @@ int main(int argc, char * argv[])
 
     for(int t=0; t<nsteps; t++)
     {
-        std::cout << t << std::endl;
+        if(t%100==0) std::cout << t << std::endl;
         arma::field<arma::cx_vec> xi_r = myNoiseGen.get_xi_r();
         if(t%freq==0) myNoiseGen.save_field(xi_r, output_dir, t, dt);
         myNoiseGen.step(dt);
