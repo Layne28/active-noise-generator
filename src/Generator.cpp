@@ -65,8 +65,11 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
 
 Generator::~Generator() {}
 
-arma::field<arma::cx_vec> Generator::get_xi_r()
+arma::field<arma::cx_vec> Generator::get_xi_r(int do_fft)
 {
+
+    if(do_fft==1) return get_xi_r_fast();
+
     using namespace std::complex_literals;
 
     arma::field<arma::cx_vec> xi_r(nx, ny, nz);
@@ -96,7 +99,7 @@ arma::field<arma::cx_vec> Generator::get_xi_r()
                         {
                             for(int q3=0; q3<nz; q3++)
                             {
-                                std::complex<double> update = xi_q(q1,q2,q3)(mu)*std::exp(-2*M_PI*1i*(
+                                std::complex<double> update = xi_q(q1,q2,q3)(mu)*std::exp(2*M_PI*1i*(
                                     (1.0*i*q1)/(1.0*nx) +
                                     (1.0*j*q2)/(1.0*ny) +
                                     (1.0*k*q3)/(1.0*nz)));
@@ -111,6 +114,68 @@ arma::field<arma::cx_vec> Generator::get_xi_r()
             }
         }
     }
+    return xi_r;
+}
+
+arma::field<arma::cx_vec> Generator::get_xi_r_fast()
+{
+    using namespace std::complex_literals;
+
+    arma::field<arma::cx_vec> xi_r(nx, ny, nz);
+    arma::cx_cube xi_rx(nx, ny, nz, arma::fill::zeros);
+    arma::cx_cube xi_ry(nx, ny, nz, arma::fill::zeros);
+    arma::cx_cube xi_rz(nx, ny, nz, arma::fill::zeros);
+    for(int i=0; i<nx; i++)
+    {
+        for(int j=0; j<ny; j++)
+        {
+            for(int k=0; k<nz; k++)
+            {
+                xi_rx(i,j,k) = xi_q(i,j,k)(0);
+                xi_ry(i,j,k) = xi_q(i,j,k)(1);
+                xi_rz(i,j,k) = xi_q(i,j,k)(2);
+                xi_r(i,j,k) = arma::cx_vec(3, arma::fill::zeros);
+                //xi_r(i,j,k)(mu) = xi_q(i,j,k)(mu);
+            }
+        }
+    }
+
+    //Fast Fourier transform w/ FFTW
+
+    //std::cout << "doing fft" << std::endl;
+
+    fftw_complex *in_x, *in_y, *in_z;
+    fftw_plan px, py, pz;
+
+    //Might be faster to initialize the plan in the constructor since all these transforms have the same size
+    //in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * nx);
+    in_x = reinterpret_cast<fftw_complex*>(xi_rx.memptr());
+    in_y = reinterpret_cast<fftw_complex*>(xi_ry.memptr());
+    in_z = reinterpret_cast<fftw_complex*>(xi_rz.memptr());
+    px = fftw_plan_dft_3d(nx, ny, nz, in_x, in_x, FFTW_BACKWARD, FFTW_ESTIMATE);
+    py = fftw_plan_dft_3d(nx, ny, nz, in_y, in_y, FFTW_BACKWARD, FFTW_ESTIMATE);
+    pz = fftw_plan_dft_3d(nx, ny, nz, in_z, in_z, FFTW_BACKWARD, FFTW_ESTIMATE);
+
+    fftw_execute(px); 
+    fftw_execute(py);
+    fftw_execute(pz);
+
+    for(int i=0; i<nx; i++)
+    {
+        for(int j=0; j<ny; j++)
+        {
+            for(int k=0; k<nz; k++)
+            {
+                xi_r(i,j,k)(0) = xi_rx(i,j,k)/(Lx*Ly*Lz);
+                xi_r(i,j,k)(1) = xi_ry(i,j,k)/(Lx*Ly*Lz);
+                xi_r(i,j,k)(2) = xi_rz(i,j,k)/(Lx*Ly*Lz);
+            }
+        }
+    }
+    //std::cout << xi_r << std::endl;
+    fftw_destroy_plan(px);
+    fftw_destroy_plan(py);
+    fftw_destroy_plan(pz);
     return xi_r;
 }
 

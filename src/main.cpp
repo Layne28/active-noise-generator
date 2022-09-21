@@ -23,9 +23,11 @@ int main(int argc, char * argv[])
     std::string output_dir = "/";
     int freq = 1;
     double dt = 1e-3;
+    int do_fft = 0;
     if(myParams.is_key("output_dir")) output_dir = myParams.get_value("output_dir");
     if(myParams.is_key("freq")) freq = std::stoi(myParams.get_value("freq"));
     if(myParams.is_key("dt")) dt = std::stod(myParams.get_value("dt"));
+    if(myParams.is_key("do_fft")) do_fft = std::stoi(myParams.get_value("do_fft"));
 
     gsl_rng *myRNG = CustomRandom::init_rng(seed);
     Generator myNoiseGen(myParams, myRNG);
@@ -33,7 +35,7 @@ int main(int argc, char * argv[])
     for(int t=0; t<nsteps; t++)
     {
         if(t%100==0) std::cout << t << std::endl;
-        arma::field<arma::cx_vec> xi_r = myNoiseGen.get_xi_r();
+        arma::field<arma::cx_vec> xi_r = myNoiseGen.get_xi_r(do_fft);
         if(t%freq==0) myNoiseGen.save_field(xi_r, output_dir, t, dt);
         myNoiseGen.step(dt);
     }

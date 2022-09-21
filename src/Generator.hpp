@@ -4,6 +4,7 @@
 #include <armadillo>
 #include <filesystem>
 #include <math.h>
+#include <fftw3.h>
 #include <complex>
 #include "CustomRandom.hpp"
 #include "ParamDict.hpp"
@@ -39,7 +40,8 @@ public:
     ~Generator();
 
     //take inverse fourier transform
-    arma::field<arma::cx_vec> get_xi_r();
+    arma::field<arma::cx_vec> get_xi_r(int do_fft=0);
+    arma::field<arma::cx_vec> get_xi_r_fast();
 
     //Get anticorrelated gaussian random number in fourier space
     std::complex<double> get_rnd_gauss_fourier(int i, int j, int k);
