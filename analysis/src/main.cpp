@@ -47,6 +47,7 @@ int main(int argc, char *argv[])
     if(myParams.is_key("nchunks")) nchunks = std::stoi(myParams.get_value("nchunks"));
 
     nframes_per_chunk = nframes/nchunks;
+    std::cout << "nframes per chunk: " << nframes_per_chunk << std::endl;
 
     //Load parameters from configurations
     std::ifstream infile(input_dir + "/noise_0.txt");
@@ -124,6 +125,7 @@ int main(int argc, char *argv[])
         for(int t=0; t<nframes_per_chunk; t++)
         {
             if (t%1000==0) std::cout << "frame " << t+c*nframes_per_chunk << std::endl;
+            //std::cout << "noise " << t+c*nframes_per_chunk << std::endl;
             std::ifstream infile2(input_dir + "/noise_" + std::to_string(t+c*nframes_per_chunk) + ".txt");
             int start_reading = 0;
             int count = 0;
@@ -146,12 +148,15 @@ int main(int argc, char *argv[])
                         count ++;                    
                     }
 
-                    if(line.find(":") == std::string::npos) start_reading=1;
+                    if(line.find(":") == std::string::npos && start_reading==0){
+                        start_reading=1;
+                        //std::cout << line << std::endl;
+                    }
                 }
                 infile2.close();
             }
         }
-        std::cout << xi[0].n_rows << std::endl;
+        std::cout << xi[0].n_rows << " " << xi[0].n_cols << " " << xi[0].n_slices << std::endl;
 
         //Create vector of indices at which separation to compute
         //the spatial correlation function.
@@ -188,7 +193,8 @@ int main(int argc, char *argv[])
 
 void compute_spatial_corr(double rmax, double delta_x, double Lx, double Ly, double Lz, std::vector<arma::field<arma::vec>> &xi, std::vector<std::array<int, 3>> &indices, std::string name_add, std::string out_dir)
 {
-    int nframes = xi.size();
+    int nframes = int(xi.size());
+    std::cout << "nframes: " << nframes << std::endl;
     int nx = xi[0].n_rows;
     int ny = xi[0].n_cols;
     int nz = xi[0].n_slices;
@@ -197,7 +203,10 @@ void compute_spatial_corr(double rmax, double delta_x, double Lx, double Ly, dou
     for(int i=0; i<int(rmax/delta_x)+1; i++) r(i) = delta_x*i;
     arma::vec rhist(int(rmax/delta_x)+1,arma::fill::zeros);
     arma::vec c_r(int(rmax/delta_x)+1, arma::fill::zeros);
-    arma::vec c_r_3d(indices.size(), arma::fill::zeros);
+    int indices_size = int(indices.size());
+    std::cout << "indices_size: " << indices_size << std::endl;
+    arma::vec c_r_3d(indices_size, arma::fill::zeros);
+    arma::vec rhist_3d(indices_size, arma::fill::zeros);
 
     std::cout << "Computing spatial correlation function..." << std::endl;
     for(int t=0; t<nframes; t++)
@@ -210,7 +219,7 @@ void compute_spatial_corr(double rmax, double delta_x, double Lx, double Ly, dou
                 for(int k1=0; k1<nz; k1++)
                 {
                     //arma::vec r1 = {dx*i1, dx*j1, dx*k1};
-                    for(int ind=0; ind<indices.size(); ind++)
+                    for(int ind=0; ind<indices_size; ind++)
                     {
                         int i2 = i1+indices[ind][0];  
                         int j2 = j1+indices[ind][1];
@@ -229,6 +238,7 @@ void compute_spatial_corr(double rmax, double delta_x, double Lx, double Ly, dou
 
                         int index = int(dist/delta_x);
                         rhist(index)++;
+                        rhist_3d(ind)++;
                         for(int mu=0; mu<3; mu++) 
                         {
                             c_r(index) += xi[t](i1,j1,k1)(mu)*xi[t](i2,j2,k2)(mu);
@@ -240,6 +250,7 @@ void compute_spatial_corr(double rmax, double delta_x, double Lx, double Ly, dou
         }
     }
     for(int i=0; i<int(rmax/delta_x)+1; i++) c_r(i) /= 3*rhist(i);
+    for(int i=0; i<indices_size; i++) c_r_3d(i) /= 3*rhist_3d(i);
 
     std::string theName = "spat_corr" + name_add + ".txt";
     std::string the3dName = "spat_corr_3d" + name_add + ".txt";
@@ -249,7 +260,8 @@ void compute_spatial_corr(double rmax, double delta_x, double Lx, double Ly, dou
 
 void compute_time_corr(double tmax, double dt, std::vector<arma::field<arma::vec>> &xi, std::string name_add, std::string out_dir)
 {
-    int nframes = xi.size();
+    int nframes = int(xi.size());
+    std::cout << "tcorr nframes: " << nframes << std::endl;
     int nx = xi[0].n_rows;
     int ny = xi[0].n_cols;
     int nz = xi[0].n_slices;
@@ -257,7 +269,7 @@ void compute_time_corr(double tmax, double dt, std::vector<arma::field<arma::vec
     int nmax = int(tmax/dt);
     arma::vec times(nmax);
     for(int i=0; i<nmax; i++) times(i) = dt*i;
-    arma::vec c_t(nmax);
+    arma::vec c_t(nmax, arma::fill::zeros);
 
     std::cout << "Computing time correlation function..." << std::endl;
     for(int t=0; t<nmax; t++)
@@ -281,6 +293,7 @@ void compute_time_corr(double tmax, double dt, std::vector<arma::field<arma::vec
         }
     }
     
+    //std::cout << "tcorr normalization: " << 3*nx*ny*nz*(nframes-nmax) << std::endl;
     for(int t=0; t<nmax; t++) c_t(t) /= 3*nx*ny*nz*(nframes-nmax); //3 for 3d
 
     std::string theName = "time_corr" + name_add + ".txt";
@@ -304,7 +317,7 @@ void print_3d_corr(std::vector<std::array<int, 3>> &indices, arma::vec &corr, do
     std::ofstream ofile;
     fs::create_directories(out_dir);
     ofile.open(out_dir + "/" + filename);
-    for(int i=0; i<indices.size(); i++)
+    for(int i=0; i<int(indices.size()); i++)
     {
         ofile << indices[i][0]*dx << " " << indices[i][1]*dx << " " << indices[i][2]*dx << " " << corr(i) << std::endl;
     }
