@@ -249,8 +249,8 @@ void compute_spatial_corr(double rmax, double delta_x, double Lx, double Ly, dou
             }
         }
     }
-    for(int i=0; i<int(rmax/delta_x)+1; i++) c_r(i) /= 3*rhist(i);
-    for(int i=0; i<indices_size; i++) c_r_3d(i) /= 3*rhist_3d(i);
+    for(int i=0; i<int(rmax/delta_x)+1; i++) c_r(i) /= (3*rhist(i));
+    for(int i=0; i<indices_size; i++) c_r_3d(i) /= (3*rhist_3d(i));
 
     std::string theName = "spat_corr" + name_add + ".txt";
     std::string the3dName = "spat_corr_3d" + name_add + ".txt";
