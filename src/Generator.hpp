@@ -2,14 +2,14 @@
 #define GENERATOR_HPP
 
 #include <armadillo>
-#include <filesystem>
+#include <experimental/filesystem>
 #include <math.h>
 #include <fftw3.h>
 #include <complex>
 #include "CustomRandom.hpp"
 #include "ParamDict.hpp"
 
-namespace fs = std::filesystem;
+namespace fs = std::experimental::filesystem;
 
 class Generator
 {

@@ -30,7 +30,7 @@ CXX := g++
 SHELL = /bin/sh
 
 # Flags to pass to the compiler; per the reccomendations of the GNU Scientific Library
-CXXFLAGS:= -std=c++17 -Wextra -pedantic -Wall -W -Wmissing-declarations -Wuninitialized -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -fshort-enums -fno-common -m64 -fopenmp -I$(HOME)/include
+CXXFLAGS:= -std=c++17 -Wextra -pedantic -Wall -W -Wmissing-declarations -Wuninitialized -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -fshort-enums -fno-common -m64 -fopenmp -I$(HOME)/.local/include
 
 # Compiler flags controling optimization levels. Use -O3 for full optimization,
 # but make sure your results are consistent
@@ -39,7 +39,8 @@ PROFILE=-pg
 OPTFLAGS:=$(PROFILE) -O2 #Might try changing to O3 to increase speed
 
 # Flags to pass to the linker; -lm links in the standard c math library
-LDFLAGS:= -fopenmp -lfftw3 -lm -lgsl -lgslcblas -llapack -lblas -larmadillo $(PROFILE) -L$(HOME)/lib 
+#LDFLAGS:= -fopenmp -lfftw3 -lm -lgsl -lgslcblas -llapack -lblas -larmadillo -lstdc++fs $(PROFILE) -L$(HOME)/.local/lib 
+LDFLAGS:= -fopenmp -lfftw3 -lm -lgsl -lgslcblas -lopenblas -larmadillo -lstdc++fs $(PROFILE) -L$(HOME)/.local/lib 
 
 # Variable to compose names of object files from the names of sources
 OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SOURCES))
