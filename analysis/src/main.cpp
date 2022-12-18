@@ -2,7 +2,7 @@
 
 #include <cstdlib>
 #include <iostream>
-#include <filesystem>
+#include <experimental/filesystem>
 
 #include "analysis.hpp"
 #include "ParamDict.hpp"
@@ -23,6 +23,7 @@ int main(int argc, char *argv[])
     int nframes = 100;
     int nchunks = 1;
     int nframes_per_chunk;
+    int frame_interval = 1;
 
     int nx;
     int ny;
@@ -126,7 +127,7 @@ int main(int argc, char *argv[])
         {
             if (t%1000==0) std::cout << "frame " << t+c*nframes_per_chunk << std::endl;
             //std::cout << "noise " << t+c*nframes_per_chunk << std::endl;
-            std::ifstream infile2(input_dir + "/noise_" + std::to_string(t+c*nframes_per_chunk) + ".txt");
+            std::ifstream infile2(input_dir + "/noise_" + std::to_string(frame_interval*(t+c*nframes_per_chunk)) + ".txt");
             int start_reading = 0;
             int count = 0;
             if (infile2.is_open()) {
@@ -185,7 +186,7 @@ int main(int argc, char *argv[])
         //Get correlation functions
         
         compute_spatial_corr(rmax, delta_x, Lx, Ly, Lz, xi, spat_indices, "_chunk=" + std::to_string(c), output_dir);
-        compute_time_corr(tmax, dt, xi, "_chunk=" + std::to_string(c), output_dir);
+        compute_time_corr(tmax, frame_interval*dt, xi, "_chunk=" + std::to_string(c), output_dir);
     }
     
     return 0;

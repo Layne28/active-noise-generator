@@ -1,8 +1,8 @@
 #!/bin/bash
 
-nx=16
-ny=16
-nz=16
+nx=32
+ny=32
+nz=32
 
 for tau in 0.01 0.1 1.0 10.0
 do

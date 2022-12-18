@@ -261,6 +261,7 @@ void Generator::step(double dt)
 
 void Generator::save_field(arma::field<arma::cx_vec> &theField, std::string out_dir, double t, double dt)
 {
+    fs::create_directories(out_dir);
     std::ofstream ofile;
     ofile.open(out_dir + "/noise_" + std::to_string(int(t)) + ".txt" );
     ofile << "nx: " << nx << std::endl;
