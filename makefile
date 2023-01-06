@@ -1,4 +1,4 @@
-#Some organization borrowed from: https://github.com/tscott8706/cpp-csv-col-replacer/blob/master
+#Some organization borrowed from: https://github.com/tscott8706/cpp-csv-col-replacer/
 
 # Build executable with:
 # % make
@@ -10,15 +10,19 @@
 SRC_DIR := src
 OBJ_DIR := build
 BIN_DIR := bin
+LIB_DIR := lib
+LIB_OBJ_DIR := lib/build
 TEST_SRC_DIR := test/src
 TEST_OBJ_DIR := test/build
 ANALYSIS_SRC_DIR := analysis/src
 ANALYSIS_OBJ_DIR := analysis/build
+LIB := $(LIB_DIR)/libangen.so
 
 EXECUTABLE := active_noise_generator
 TEST_EXECUTABLE := test_active_noise_generator
 ANALYSIS_EXECUTABLE := analyze
 SOURCES := $(wildcard $(SRC_DIR)/*.cpp)
+SOURCES_NO_MAIN := $(filter-out $(SRC_DIR)/main.cpp,$(SOURCES))
 TEST_SOURCES := $(wildcard $(TEST_SRC_DIR)/*.cpp)
 ANALYSIS_SOURCES := $(wildcard $(ANALYSIS_SRC_DIR)/*.cpp)
 HEADERS := $(wildcard $(SRC_DIR)/*.hpp)
@@ -39,11 +43,12 @@ PROFILE=-pg
 OPTFLAGS:=$(PROFILE) -O2 #Might try changing to O3 to increase speed
 
 # Flags to pass to the linker; -lm links in the standard c math library
-LDFLAGS:= -fopenmp -lfftw3 -lm -lgsl -lgslcblas -llapack -lblas -larmadillo $(PROFILE) -L$(HOME)/lib 
+LDFLAGS:= -fopenmp -lfftw3 -lm -lgsl -lgslcblas -llapack -lblas -larmadillo $(PROFILE) -L$(HOME)/lib
 
 # Variable to compose names of object files from the names of sources
 OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SOURCES))
-OBJECTS_NO_MAIN = $(filter-out $(OBJ_DIR)/main.o,$(OBJECTS))
+OBJECTS_NO_MAIN := $(filter-out $(OBJ_DIR)/main.o,$(OBJECTS))
+OBJECTS_LIB := $(patsubst $(SRC_DIR)/%.cpp,$(LIB_OBJ_DIR)/%.o,$(SOURCES_NO_MAIN))
 
 #When compiling tests, include all objects in actual program except for main
 #(there's a main function in the test folder)
@@ -55,14 +60,17 @@ ANALYSIS_OBJECTS := $(patsubst $(ANALYSIS_SRC_DIR)/%.cpp,$(ANALYSIS_OBJ_DIR)/%.o
 # Default target depends on sources and headers to detect changes
 all: $(SOURCES) $(HEADERS)  $(BIN_DIR)/$(EXECUTABLE)
 analysis: $(ANALYSIS_SOURCES) $(ANALYSIS_HEADERS) $(BIN_DIR)/$(ANALYSIS_EXECUTABLE)
+lib: $(LIB)
+	install $(LIB) /usr/local/lib/
 install: 
 	install bin/* /usr/local/bin/
 test: $(TEST_SOURCES) $(TEST_HEADERS) $(BIN_DIR)/$(TEST_EXECUTABLE)
 
 # Rule to compile a source file to object code
-$(OBJECTS): $(OBJ_DIR)/%.o : $(SRC_DIR)/%.cpp
+$(OBJ_DIR)/%.o : $(SRC_DIR)/%.cpp
 	$(CXX) -c $(CXXFLAGS) $(OPTFLAGS) $< -o $@
-#$(TEST_OBJECTS): $(TEST_OBJ_DIR)/%.o : $(TEST_SRC_DIR)/%.cpp
+$(LIB_OBJ_DIR)/%.o : $(SRC_DIR)/%.cpp
+	$(CXX) -fPIC -c $(CXXFLAGS) $(OPTFLAGS) $< -o $@
 $(TEST_OBJ_DIR)/%.o : $(TEST_SRC_DIR)/%.cpp
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 $(ANALYSIS_OBJ_DIR)/%.o : $(ANALYSIS_SRC_DIR)/%.cpp
@@ -71,11 +79,14 @@ $(ANALYSIS_OBJ_DIR)/%.o : $(ANALYSIS_SRC_DIR)/%.cpp
 # Build the executable by linking all objects
 $(BIN_DIR)/$(EXECUTABLE): $(OBJECTS)
 	$(CXX) $(OBJECTS) $(LDFLAGS) -o $@
+$(LIB): $(OBJECTS_LIB)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared -o $@ $(OBJECTS_LIB)
+#	$(CXX) -shared $(LDFLAGS) $(OBJECTS_LIB) -o $@ 
 $(BIN_DIR)/$(TEST_EXECUTABLE): $(TEST_OBJECTS)
-	$(CXX) $(TEST_OBJECTS) $(LDFLAGS) -o $@
+	$(CXX) $(TEST_OBJECTS) $(LDFLAGS) -shared -o $@
 $(BIN_DIR)/$(ANALYSIS_EXECUTABLE): $(ANALYSIS_OBJECTS)
 	$(CXX) $(ANALYSIS_OBJECTS) $(LDFLAGS) -o $@
 
 # clean up so we can start over (removes executable!)
 clean:
-	rm -f $(OBJ_DIR)/*.o $(TEST_OBJ_DIR)/*.o $(ANALYSIS_OBJ_DIR)/*.o $(BIN_DIR)/$(EXECUTABLE) $(BIN_DIR)/$(TEST_EXECUTABLE) $(BIN_DIR)/$(ANALYSIS_EXECUTABLE)
+	rm -f $(OBJ_DIR)/*.o $(LIB_OBJ_DIR)/*.o $(TEST_OBJ_DIR)/*.o $(ANALYSIS_OBJ_DIR)/*.o $(BIN_DIR)/$(EXECUTABLE) $(BIN_DIR)/$(TEST_EXECUTABLE) $(BIN_DIR)/$(ANALYSIS_EXECUTABLE)
