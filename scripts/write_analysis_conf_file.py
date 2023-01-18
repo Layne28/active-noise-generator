@@ -17,7 +17,7 @@ def main():
     parser.add_argument('--Lambda', default='8.0')
     parser.add_argument('--nframes', default='10000')
     parser.add_argument('--nchunks', default='10')
-    parser.add_argument('--frame_interval', default='10')
+    parser.add_argument('--frame_interval', default='1')
     parser.add_argument('--rmax', default='8.0')
     parser.add_argument('--delta_x', default='1.0')
 

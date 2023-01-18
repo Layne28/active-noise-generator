@@ -17,10 +17,10 @@ def main():
     parser.add_argument('--D', default='1.0')
     parser.add_argument('--do_fft', default='1')
 
-    parser.add_argument('--dt', default='0.01')
+    parser.add_argument('--dt', default='0.001')
 
     parser.add_argument('--output_dir', default='../active-noise-results')
-    parser.add_argument('--freq', default='10')
+    parser.add_argument('--freq', default='1')
 
     args = parser.parse_args()
     print(args.__dict__)

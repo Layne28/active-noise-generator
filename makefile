@@ -10,10 +10,13 @@
 SRC_DIR := src
 OBJ_DIR := build
 BIN_DIR := bin
+LIB_DIR := lib
+LIB_OBJ_DIR := lib/build
 TEST_SRC_DIR := test/src
 TEST_OBJ_DIR := test/build
 ANALYSIS_SRC_DIR := analysis/src
 ANALYSIS_OBJ_DIR := analysis/build
+LIB := $(LIB_DIR)/libangen.so
 
 EXECUTABLE := active_noise_generator
 TEST_EXECUTABLE := test_active_noise_generator
@@ -45,6 +48,7 @@ LDFLAGS:= -fopenmp -lfftw3 -lm -lgsl -lgslcblas -lopenblas -larmadillo -lstdc++f
 # Variable to compose names of object files from the names of sources
 OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SOURCES))
 OBJECTS_NO_MAIN = $(filter-out $(OBJ_DIR)/main.o,$(OBJECTS))
+OBJECTS_LIB := $(patsubst $(SRC_DIR)/%.cpp,$(LIB_OBJ_DIR)/%.o,$(SOURCES_NO_MAIN))
 
 #When compiling tests, include all objects in actual program except for main
 #(there's a main function in the test folder)
@@ -56,14 +60,19 @@ ANALYSIS_OBJECTS := $(patsubst $(ANALYSIS_SRC_DIR)/%.cpp,$(ANALYSIS_OBJ_DIR)/%.o
 # Default target depends on sources and headers to detect changes
 all: $(SOURCES) $(HEADERS)  $(BIN_DIR)/$(EXECUTABLE)
 analysis: $(ANALYSIS_SOURCES) $(ANALYSIS_HEADERS) $(BIN_DIR)/$(ANALYSIS_EXECUTABLE)
+lib: $(LIB)
+	install $(LIB) $(HOME)/.local/lib/
+	mkdir $(HOME)/.local/include/libangen
+	install $(HEADERS) $(HOME)/.local/include/libangen/
 install: 
-	install bin/* /usr/local/bin/
+	install bin/* $(HOME)/.local/bin/
 test: $(TEST_SOURCES) $(TEST_HEADERS) $(BIN_DIR)/$(TEST_EXECUTABLE)
 
 # Rule to compile a source file to object code
-$(OBJECTS): $(OBJ_DIR)/%.o : $(SRC_DIR)/%.cpp
+$(OBJ_DIR)/%.o : $(SRC_DIR)/%.cpp
 	$(CXX) -c $(CXXFLAGS) $(OPTFLAGS) $< -o $@
-#$(TEST_OBJECTS): $(TEST_OBJ_DIR)/%.o : $(TEST_SRC_DIR)/%.cpp
+$(LIB_OBJ_DIR)/%.o : $(SRC_DIR)/%.cpp
+	$(CXX) -fPIC -c $(CXXFLAGS) $(OPTFLAGS) $< -o $@
 $(TEST_OBJ_DIR)/%.o : $(TEST_SRC_DIR)/%.cpp
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 $(ANALYSIS_OBJ_DIR)/%.o : $(ANALYSIS_SRC_DIR)/%.cpp
@@ -72,6 +81,8 @@ $(ANALYSIS_OBJ_DIR)/%.o : $(ANALYSIS_SRC_DIR)/%.cpp
 # Build the executable by linking all objects
 $(BIN_DIR)/$(EXECUTABLE): $(OBJECTS)
 	$(CXX) $(OBJECTS) $(LDFLAGS) -o $@
+$(LIB): $(OBJECTS_LIB)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared -o $@ $(OBJECTS_LIB)
 $(BIN_DIR)/$(TEST_EXECUTABLE): $(TEST_OBJECTS)
 	$(CXX) $(TEST_OBJECTS) $(LDFLAGS) -o $@
 $(BIN_DIR)/$(ANALYSIS_EXECUTABLE): $(ANALYSIS_OBJECTS)
@@ -79,4 +90,4 @@ $(BIN_DIR)/$(ANALYSIS_EXECUTABLE): $(ANALYSIS_OBJECTS)
 
 # clean up so we can start over (removes executable!)
 clean:
-	rm -f $(OBJ_DIR)/*.o $(TEST_OBJ_DIR)/*.o $(ANALYSIS_OBJ_DIR)/*.o $(BIN_DIR)/$(EXECUTABLE) $(BIN_DIR)/$(TEST_EXECUTABLE) $(BIN_DIR)/$(ANALYSIS_EXECUTABLE)
+	rm -f $(OBJ_DIR)/*.o $(LIB_OBJ_DIR)/*.o $(TEST_OBJ_DIR)/*.o $(ANALYSIS_OBJ_DIR)/*.o $(BIN_DIR)/$(EXECUTABLE) $(BIN_DIR)/$(TEST_EXECUTABLE) $(BIN_DIR)/$(ANALYSIS_EXECUTABLE)
