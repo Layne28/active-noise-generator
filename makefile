@@ -62,7 +62,7 @@ all: $(SOURCES) $(HEADERS)  $(BIN_DIR)/$(EXECUTABLE)
 analysis: $(ANALYSIS_SOURCES) $(ANALYSIS_HEADERS) $(BIN_DIR)/$(ANALYSIS_EXECUTABLE)
 lib: $(LIB)
 	install $(LIB) $(HOME)/.local/lib/
-	mkdir $(HOME)/.local/include/libangen
+	mkdir -p $(HOME)/.local/include/libangen
 	install $(HEADERS) $(HOME)/.local/include/libangen/
 install: 
 	install bin/* $(HOME)/.local/bin/
