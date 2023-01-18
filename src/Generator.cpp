@@ -232,7 +232,7 @@ void Generator::step(double dt)
                 else
                 {
                     double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly) + k*k/(Lz*Lz));
-                    double prefactor = sqrt(2*D*dt)*sqrt(Lx*Ly*Lz)/tau/(1+lambda*lambda*q_sq);
+                    double prefactor = sqrt(2*D*dt)*sqrt(Lx*Ly*Lz)/tau/(1+lambda*lambda*q_sq); //TODO: does the 2 need to be a 6?
                     for(int mu=0; mu<3; mu++)
                     {
                         noise_incr(i,j,k)(mu) = prefactor*get_rnd_gauss_fourier(i,j,k);
@@ -261,6 +261,7 @@ void Generator::step(double dt)
 
 void Generator::save_field(arma::field<arma::cx_vec> &theField, std::string out_dir, double t, double dt)
 {
+    fs::create_directories(out_dir);
     std::ofstream ofile;
     ofile.open(out_dir + "/noise_" + std::to_string(int(t)) + ".txt" );
     ofile << "nx: " << nx << std::endl;

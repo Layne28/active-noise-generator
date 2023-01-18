@@ -4,12 +4,12 @@
 #include <vector>
 #include <fstream>
 #include <assert.h>
-#include <filesystem>
+#include <experimental/filesystem>
 #include <algorithm>
 #include <cmath>
 #include <armadillo>
 
-namespace fs = std::filesystem;
+namespace fs = std::experimental::filesystem;
 using std::istringstream;
 
 void compute_spatial_corr(double rmax, double delta_x, double Lx, double Ly, double Lz, std::vector<arma::field<arma::vec>> &xi, std::vector<std::array<int, 3>> &indices, std::string name_add, std::string out_dir);
