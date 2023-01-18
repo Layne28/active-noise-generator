@@ -50,7 +50,8 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
                 else
                 {
                     double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly) + k*k/(Lz*Lz));
-                    double prefactor = sqrt(D/tau)*sqrt(Lx*Ly*Lz)/(1+lambda*lambda*q_sq);
+                    //if you change something in this prefactor it needs to be changed in the prefactor in the "step" function!
+                    double prefactor = sqrt(D/tau)*sqrt(8*M_PI*lambda*lambda*lambda)*sqrt(Lx*Ly*Lz)/(1+lambda*lambda*q_sq);
                     for(int mu=0; mu<3; mu++)
                     {
                         xi_q(i,j,k)(mu) = prefactor*get_rnd_gauss_fourier(i,j,k);
@@ -232,7 +233,7 @@ void Generator::step(double dt)
                 else
                 {
                     double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly) + k*k/(Lz*Lz));
-                    double prefactor = sqrt(2*D*dt)*sqrt(Lx*Ly*Lz)/tau/(1+lambda*lambda*q_sq);
+                    double prefactor = sqrt(2*D*dt)*sqrt(8*M_PI*lambda*lambda*lambda)*sqrt(Lx*Ly*Lz)/tau/(1+lambda*lambda*q_sq);
                     for(int mu=0; mu<3; mu++)
                     {
                         noise_incr(i,j,k)(mu) = prefactor*get_rnd_gauss_fourier(i,j,k);

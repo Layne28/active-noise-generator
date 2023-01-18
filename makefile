@@ -62,6 +62,8 @@ all: $(SOURCES) $(HEADERS)  $(BIN_DIR)/$(EXECUTABLE)
 analysis: $(ANALYSIS_SOURCES) $(ANALYSIS_HEADERS) $(BIN_DIR)/$(ANALYSIS_EXECUTABLE)
 lib: $(LIB)
 	install $(LIB) /usr/local/lib/
+	mkdir /usr/local/include/libangen
+	install $(HEADERS) /usr/local/include/libangen/
 install: 
 	install bin/* /usr/local/bin/
 test: $(TEST_SOURCES) $(TEST_HEADERS) $(BIN_DIR)/$(TEST_EXECUTABLE)
