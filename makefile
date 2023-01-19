@@ -22,6 +22,7 @@ EXECUTABLE := active_noise_generator
 TEST_EXECUTABLE := test_active_noise_generator
 ANALYSIS_EXECUTABLE := analyze
 SOURCES := $(wildcard $(SRC_DIR)/*.cpp)
+SOURCES_NO_MAIN := $(filter-out $(SRC_DIR)/main.cpp,$(SOURCES))
 TEST_SOURCES := $(wildcard $(TEST_SRC_DIR)/*.cpp)
 ANALYSIS_SOURCES := $(wildcard $(ANALYSIS_SRC_DIR)/*.cpp)
 HEADERS := $(wildcard $(SRC_DIR)/*.hpp)
@@ -43,11 +44,11 @@ OPTFLAGS:=$(PROFILE) -O2 #Might try changing to O3 to increase speed
 
 # Flags to pass to the linker; -lm links in the standard c math library
 #LDFLAGS:= -fopenmp -lfftw3 -lm -lgsl -lgslcblas -llapack -lblas -larmadillo -lstdc++fs $(PROFILE) -L$(HOME)/.local/lib 
-LDFLAGS:= -fopenmp -lfftw3 -lm -lgsl -lgslcblas -lopenblas -larmadillo -lstdc++fs $(PROFILE) -L$(HOME)/.local/lib 
+LDFLAGS:= -lfftw3 -lm -lgsl -lgslcblas -lopenblas -larmadillo -lstdc++fs $(PROFILE) -L$(HOME)/.local/lib 
 
 # Variable to compose names of object files from the names of sources
 OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SOURCES))
-OBJECTS_NO_MAIN = $(filter-out $(OBJ_DIR)/main.o,$(OBJECTS))
+OBJECTS_NO_MAIN := $(filter-out $(OBJ_DIR)/main.o,$(OBJECTS))
 OBJECTS_LIB := $(patsubst $(SRC_DIR)/%.cpp,$(LIB_OBJ_DIR)/%.o,$(SOURCES_NO_MAIN))
 
 #When compiling tests, include all objects in actual program except for main
@@ -62,8 +63,8 @@ all: $(SOURCES) $(HEADERS)  $(BIN_DIR)/$(EXECUTABLE)
 analysis: $(ANALYSIS_SOURCES) $(ANALYSIS_HEADERS) $(BIN_DIR)/$(ANALYSIS_EXECUTABLE)
 lib: $(LIB)
 	install $(LIB) $(HOME)/.local/lib/
-	mkdir -p $(HOME)/.local/include/libangen
-	install $(HEADERS) $(HOME)/.local/include/libangen/
+	mkdir -p $(HOME)/.local/include/angen
+	install $(HEADERS) $(HOME)/.local/include/angen/
 install: 
 	install bin/* $(HOME)/.local/bin/
 test: $(TEST_SOURCES) $(TEST_HEADERS) $(BIN_DIR)/$(TEST_EXECUTABLE)
@@ -90,4 +91,4 @@ $(BIN_DIR)/$(ANALYSIS_EXECUTABLE): $(ANALYSIS_OBJECTS)
 
 # clean up so we can start over (removes executable!)
 clean:
-	rm -f $(OBJ_DIR)/*.o $(LIB_OBJ_DIR)/*.o $(TEST_OBJ_DIR)/*.o $(ANALYSIS_OBJ_DIR)/*.o $(BIN_DIR)/$(EXECUTABLE) $(BIN_DIR)/$(TEST_EXECUTABLE) $(BIN_DIR)/$(ANALYSIS_EXECUTABLE)
+	rm -f $(OBJ_DIR)/*.o $(LIB_OBJ_DIR)/*.o $(TEST_OBJ_DIR)/*.o $(ANALYSIS_OBJ_DIR)/*.o $(BIN_DIR)/$(EXECUTABLE) $(BIN_DIR)/$(TEST_EXECUTABLE) $(BIN_DIR)/$(ANALYSIS_EXECUTABLE) $(LIB_DIR)/*.so
