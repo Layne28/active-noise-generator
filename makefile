@@ -29,7 +29,8 @@ HEADERS := $(wildcard $(SRC_DIR)/*.hpp)
 TEST_HEADERS := $(wildcard $(TEST_SRC_DIR)/*.hpp)
 ANALYSIS_HEADERS := $(wildcard $(ANALYSIS_SRC_DIR)/*.hpp)
 
-CXX := g++
+#CXX := g++
+CXX := h5c++
 
 SHELL = /bin/sh
 
@@ -44,7 +45,7 @@ OPTFLAGS:=$(PROFILE) -O2 #Might try changing to O3 to increase speed
 
 # Flags to pass to the linker; -lm links in the standard c math library
 #LDFLAGS:= -fopenmp -lfftw3 -lm -lgsl -lgslcblas -llapack -lblas -larmadillo -lstdc++fs $(PROFILE) -L$(HOME)/.local/lib 
-LDFLAGS:= -lfftw3 -lm -lgsl -lgslcblas -lopenblas -larmadillo -lstdc++fs $(PROFILE) -L$(HOME)/.local/lib 
+LDFLAGS:= -lfftw3 -lm -lgsl -lgslcblas -lopenblas -larmadillo -lstdc++fs -lhdf5 -lhdf5_cpp $(PROFILE) -L$(HOME)/.local/lib 
 
 # Variable to compose names of object files from the names of sources
 OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SOURCES))
