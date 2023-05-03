@@ -29,19 +29,19 @@ int main(int argc, char * argv[])
     int freq = 1;
     double dt = 1e-3;
     int do_fft = 0;
-    int dims = 1;
+    int dim = 1;
     if(myParams.is_key("output_dir")) output_dir = myParams.get_value("output_dir");
     if(myParams.is_key("freq")) freq = std::stoi(myParams.get_value("freq"));
     if(myParams.is_key("dt")) dt = std::stod(myParams.get_value("dt"));
     if(myParams.is_key("do_fft")) do_fft = std::stoi(myParams.get_value("do_fft"));
-    if(myParams.is_key("dims")) dims = std::stoi(myParams.get_value("dims"));
+    if(myParams.is_key("dim")) dim = std::stoi(myParams.get_value("dim"));
 
     //Initialize random number generator
     gsl_rng *myRNG = CustomRandom::init_rng(seed);
 
     //Initialize active noise generator
     //Generator3D myNoiseGen(myParams, myRNG);
-    Generator2D myNoiseGen(myParams, myRNG);
+    Generator myNoiseGen(myParams, myRNG);
 
     //Open output file for writing noise trajectory
     myNoiseGen.open_h5(output_dir);

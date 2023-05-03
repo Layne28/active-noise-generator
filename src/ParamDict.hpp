@@ -6,7 +6,7 @@
 #include <string>
 #include <map>
 
-//TODO: add functionality for interpreting headers to extract subsections of conf file
+//TODO: add functionality for interpreting headers to extract subsections of input file
 //TODO: add functionality ignoring comments marked by "//"
 class ParamDict
 {

@@ -33,9 +33,9 @@ void ParamDict::read_params(std::string filename)
     //Check file extension
     int delim_index = filename.find_last_of(".");
     std::string extension = filename.substr(delim_index+1);
-    if (extension!="conf")
+    if (extension!="in")
     {
-        throw std::runtime_error("Error: parameters must be read from a .conf file!");
+        throw std::runtime_error("Error: parameters must be read from a .in file!");
     }
     std::ifstream file(filename);
     file.exceptions(std::ifstream::failbit);// | std::ifstream::badbit);
@@ -57,7 +57,7 @@ void ParamDict::read_params(std::string filename)
     }
     catch (std::ifstream::failure &e)
     {
-        if (!file.eof()) std::cerr << "Exception opening/reading/closing conf file\n";
+        if (!file.eof()) std::cerr << "Exception opening/reading/closing input file\n";
     }
     
 }
