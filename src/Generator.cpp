@@ -47,8 +47,8 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
                     }
                     else {
                         double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly) + k*k/(Lz*Lz));
-                        double cq_sqrt = 1/(1+lambda*lambda*q_sq);
-                        double prefactor = sqrt(D/tau)*sqrt(Lx*Ly*Lz)*cq_sqrt;
+                        double cq_sqrt = sqrt(8*M_PI*lambda*lambda*lambda)/(1+lambda*lambda*q_sq);
+                        double prefactor = sqrt(D)*sqrt(Lx*Ly*Lz)*cq_sqrt;
                         for(int mu=0; mu<3; mu++){
                             xi_q(i,j,k)(mu) = prefactor*get_rnd_gauss_fourier_3D(i,j,k);
                         }
@@ -82,8 +82,8 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
                 else {
                     double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly));
                     //C(q) = 1/(1+q^2+lambda^2)^(3/2)
-                    double cq_sqrt = sqrt(1/((1+lambda*lambda*q_sq)*sqrt((1+lambda*lambda*q_sq))));
-                    double prefactor = sqrt(D/tau)*sqrt(Lx*Ly)*cq_sqrt;
+                    double cq_sqrt = sqrt(2*M_PI*lambda*lambda/((1+lambda*lambda*q_sq)*sqrt((1+lambda*lambda*q_sq))));
+                    double prefactor = sqrt(D)*sqrt(Lx*Ly)*cq_sqrt;
                     for(int mu=0; mu<2; mu++){
                         xi_q(i,j)(mu) = prefactor*get_rnd_gauss_fourier_2D(i,j);
                     }
@@ -103,7 +103,7 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
         //Initialize q field to ensure stationarity
         for(int i=0; i<nx/2+1; i++) {
             double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx));
-            double prefactor = sqrt(D/tau)*sqrt(Lx)/sqrt(1+lambda*lambda*q_sq);
+            double prefactor = sqrt(D)*sqrt(Lx)*sqrt(2*lambda)/sqrt(1+lambda*lambda*q_sq);
 
             xi_q(i)(0) = prefactor*get_rnd_gauss_fourier_1D(i);
             if(i>0) xi_q(nx-i)(0) = std::conj(xi_q(i)(0));
@@ -443,8 +443,8 @@ void Generator::step(double dt)
                     {
                         double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly) + k*k/(Lz*Lz));
                         //Assume that exponential is normalized, so prefactor is (8*M_PI*lambda*lambda*lambda)
-                        double cq_sqrt = 1/(1+lambda*lambda*q_sq);
-                        double prefactor = sqrt(2*D*dt*Lx*Ly*Lz)*cq_sqrt/tau;
+                        double cq_sqrt = sqrt(8*M_PI*lambda*lambda*lambda)/(1+lambda*lambda*q_sq);
+                        double prefactor = sqrt(2*D*dt*Lx*Ly*Lz/tau)*cq_sqrt;
                         for(int mu=0; mu<3; mu++) {
                             noise_incr(i,j,k)(mu) = prefactor*get_rnd_gauss_fourier_3D(i,j,k);
                         }
@@ -493,8 +493,8 @@ void Generator::step(double dt)
                 }
                 else {
                     double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly));
-                    double cq_sqrt = sqrt(1/((1+lambda*lambda*q_sq)*sqrt((1+lambda*lambda*q_sq))));
-                    double prefactor = sqrt(2*D*dt*Lx*Ly)*cq_sqrt/tau;
+                    double cq_sqrt = sqrt(2*M_PI*lambda*lambda/((1+lambda*lambda*q_sq)*sqrt((1+lambda*lambda*q_sq))));
+                    double prefactor = sqrt(2*D*dt*Lx*Ly/tau)*cq_sqrt;
                     for(int mu=0; mu<2; mu++) {
                         noise_incr(i,j)(mu) = prefactor*get_rnd_gauss_fourier_2D(i,j);
                     }
@@ -519,7 +519,7 @@ void Generator::step(double dt)
 
         for (int i=0; i<nx/2+1; i++) {
             double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx));
-            double prefactor = sqrt(2*D*dt)/tau*sqrt(Lx)/sqrt(1+lambda*lambda*q_sq);
+            double prefactor = sqrt(2*D*dt/tau)*sqrt(Lx)*sqrt(2*lambda)/sqrt(1+lambda*lambda*q_sq);
             noise_incr(i) = prefactor*get_rnd_gauss_fourier_1D(i);
             if(i>0) noise_incr(nx-i) = std::conj(noise_incr(i));
         }

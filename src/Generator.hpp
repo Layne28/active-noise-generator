@@ -43,7 +43,7 @@ public:
     ~Generator();
 
     //take inverse fourier transform
-    arma::field<arma::cx_vec> get_xi_r(int do_fft=0);
+    arma::field<arma::cx_vec> get_xi_r(int do_fft=1);
     arma::field<arma::cx_vec> get_xi_r_fast();
 
     //Get anticorrelated gaussian random number in fourier space
