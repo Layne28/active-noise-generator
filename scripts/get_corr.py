@@ -16,7 +16,7 @@ def main():
 
     data = h5py.File(in_folder + '/noise_traj.h5', 'r')
 
-    tau_max = 25 #max time to which to compute correlation function
+    tau_max = 5 #max time to which to compute correlation function
 
     if not os.path.exists(out_folder):
         print('Output folder does not exist. Creating it now.')
@@ -54,7 +54,9 @@ def main():
     corr_file.create_dataset('/parameters/D', data=D)
 
     #Compute C(t)
+    print('c0_test: ', get_corr_t0_test(noise, frame_diff_max))
     c_t = get_corr_t(noise, frame_diff_max)
+    print('time zero corr: ', c_t[0])
 
     corr_file.create_dataset('/corr_t/value', data=c_t) 
 
@@ -66,6 +68,7 @@ def get_corr_t(xi_mat, tmax):
     nx = xi_mat.shape[1]
     ny = xi_mat.shape[2]
     ndim = xi_mat.shape[3]
+    print(ndim)
     c_t = np.zeros(tmax)
     for t in range(tmax):
         #take inner product of xi_r(t) and xi_r(t+delta_t) and average over t and r
@@ -75,5 +78,19 @@ def get_corr_t(xi_mat, tmax):
                     c_t[t] += np.mean(xi_mat[:-tmax,i,j,d]*xi_mat[t:(-tmax+t),i,j,d])
         c_t[t] /= (nx*ny*ndim)
     return c_t
+
+@numba.jit(nopython=True) 
+def get_corr_t0_test(xi_mat, tmax):
+    nx = xi_mat.shape[1]
+    ny = xi_mat.shape[2]
+    ndim = xi_mat.shape[3]
+    print(ndim)
+    c_0 = 0.0
+    for i in range(nx): #sum over x
+        for j in range(ny): #sum over y
+            for d in range(ndim): #sum over dimensions
+                c_0 += xi_mat[0,i,j,d]*xi_mat[0,i,j,d]
+    c_0 /= (nx*ny*ndim)
+    return c_0
 
 main()

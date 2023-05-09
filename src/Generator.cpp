@@ -79,18 +79,30 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
         }
 
         //Compute normalized q-space correlation function
+        arma::mat is_filled(nx, ny, arma::fill::zeros);
         arma::mat cq(nx, ny, arma::fill::zeros);
+
         for(int i=0; i<nx; i++) {
             for(int j=0; j<ny; j++) {
-                double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly));
-                cq(i,j) = 2*M_PI*lambda*lambda/((1+lambda*lambda*q_sq)*sqrt((1+lambda*lambda*q_sq)));
+                if(is_filled((nx-i)%nx,(ny-j)%ny)==1) {                    
+                    for(int mu=0; mu<2; mu++) {
+                        cq(i,j) = cq((nx-i)%nx,(ny-j)%ny);
+                    }
+                    is_filled(i,j)=1.0;
+                }
+                else {
+                    double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly));
+                    cq(i,j) = 2*M_PI*lambda*lambda/pow(1+lambda*lambda*q_sq,3.0/2.0);
+                    is_filled(i,j)=1.0;
+                }
             }
         }
         cq = cq/(arma::accu(cq)/(nx*ny)); //normalize such that f(r=0)=1
 
         //Initialize q field to ensure stationarity
         //create a cube to track which field values have been filled
-        arma::mat is_filled(nx, ny, arma::fill::zeros);
+        //arma::mat is_filled(nx, ny, arma::fill::zeros);
+        is_filled.zeros(nx, ny);
         for(int i=0; i<nx; i++) {
             for(int j=0; j<ny; j++) {
                 if(is_filled((nx-i)%nx,(ny-j)%ny)==1) {                    
@@ -210,10 +222,12 @@ arma::field<arma::cx_vec> Generator::get_xi_r(int do_fft) {
                                 (1.0*i*q1)/(1.0*nx) +
                                 (1.0*j*q2)/(1.0*ny)));
                             //Check that imaginary part is zero
+                            /*
                             if(update.imag()>1e-3){
                                 std::cout << "Warning: imaginary part of transform is not zero!" << std::endl;
                                 std::cout << "imaginary part:" << update.imag() << std::endl;
                             }
+                            */
                             xi_r(i,j)(mu) += update.real();
                         }
                     }
@@ -513,17 +527,28 @@ void Generator::step(double dt)
         }
 
         //Compute normalized q-space correlation function
+        arma::mat is_filled(nx, ny, arma::fill::zeros);
         arma::mat cq(nx, ny, arma::fill::zeros);
+
         for(int i=0; i<nx; i++) {
             for(int j=0; j<ny; j++) {
-                double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly));
-                cq(i,j) = 2*M_PI*lambda*lambda/((1+lambda*lambda*q_sq)*sqrt((1+lambda*lambda*q_sq)));
+                if(is_filled((nx-i)%nx,(ny-j)%ny)==1) {                    
+                    for(int mu=0; mu<2; mu++) {
+                        cq(i,j) = cq((nx-i)%nx,(ny-j)%ny);
+                    }
+                    is_filled(i,j)=1.0;
+                }
+                else {
+                    double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly));
+                    cq(i,j) = 2*M_PI*lambda*lambda/pow(1+lambda*lambda*q_sq,3.0/2.0);
+                    is_filled(i,j)=1.0;
+                }
             }
         }
         cq = cq/(arma::accu(cq)/(nx*ny)); //normalize such that f(r=0)=1
 
         //Compute noise increment
-        arma::mat is_filled(nx, ny, arma::fill::zeros);
+        is_filled.zeros(nx, ny);
         for(int i=0; i<nx; i++) {
             for(int j=0; j<ny; j++) {
                 //Check for pairs of values that are complex conjugates by symmetry
@@ -536,6 +561,7 @@ void Generator::step(double dt)
                 else {
 
                     double prefactor = sqrt(2*D*dt*Lx*Ly*cq(i,j)/tau);
+                    //double prefactor = sqrt((1-exp(-2*D*dt/tau))*Lx*Ly*cq(i,j));
                     for(int mu=0; mu<2; mu++) {
                         noise_incr(i,j)(mu) = prefactor*get_rnd_gauss_fourier_2D(i,j);
                     }
@@ -549,6 +575,7 @@ void Generator::step(double dt)
             for(int j=0; j<ny; j++) {
                 for(int mu=0; mu<2; mu++) {
                     xi_q(i,j)(mu) += (-dt)/tau*xi_q(i,j)(mu) + noise_incr(i,j)(mu);
+                    //xi_q(i,j)(mu) = exp(-dt/tau)*xi_q(i,j)(mu) + noise_incr(i,j)(mu); //''exact'' version
                 }
             }
         }
