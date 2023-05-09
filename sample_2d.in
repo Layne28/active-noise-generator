@@ -4,7 +4,7 @@ dx = 1.0
 nx = 100
 ny = 100
 tau = 1.0
-lambda = 5.0
+lambda = 10.0
 D = 1.0
 do_fft = 1
 

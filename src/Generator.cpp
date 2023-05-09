@@ -33,6 +33,18 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
             }
         }
 
+        //Compute normalized q-space correlation function
+        arma::cube cq(nx, ny, nz, arma::fill::zeros);
+        for(int i=0; i<nx; i++) {
+            for(int j=0; j<ny; j++) {
+                for(int k=0; k<nz; k++) {
+                    double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly) + k*k/(Lz*Lz));
+                    cq(i,j,k) = 8*M_PI*lambda*lambda*lambda/((1+lambda*lambda*q_sq)*(1+lambda*lambda*q_sq));
+                }
+            }
+        }
+        cq = cq/(arma::accu(cq)/(nx*ny*nz)); //normalize such that f(r=0)=1
+
         //Initialize q field to ensure stationarity
         //create a cube to track which field values have been filled
         arma::cube is_filled(nx, ny, nz, arma::fill::zeros);
@@ -46,9 +58,7 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
                         is_filled(i,j,k)=1.0;
                     }
                     else {
-                        double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly) + k*k/(Lz*Lz));
-                        double cq_sqrt = sqrt(8*M_PI*lambda*lambda*lambda)/(1+lambda*lambda*q_sq);
-                        double prefactor = sqrt(D)*sqrt(Lx*Ly*Lz)*cq_sqrt;
+                        double prefactor = sqrt(D*Lx*Ly*Lz*cq(i,j,k));
                         for(int mu=0; mu<3; mu++){
                             xi_q(i,j,k)(mu) = prefactor*get_rnd_gauss_fourier_3D(i,j,k);
                         }
@@ -68,6 +78,16 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
             }
         }
 
+        //Compute normalized q-space correlation function
+        arma::mat cq(nx, ny, arma::fill::zeros);
+        for(int i=0; i<nx; i++) {
+            for(int j=0; j<ny; j++) {
+                double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly));
+                cq(i,j) = 2*M_PI*lambda*lambda/((1+lambda*lambda*q_sq)*sqrt((1+lambda*lambda*q_sq)));
+            }
+        }
+        cq = cq/(arma::accu(cq)/(nx*ny)); //normalize such that f(r=0)=1
+
         //Initialize q field to ensure stationarity
         //create a cube to track which field values have been filled
         arma::mat is_filled(nx, ny, arma::fill::zeros);
@@ -80,10 +100,7 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
                     is_filled(i,j)=1.0;
                 }
                 else {
-                    double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly));
-                    //C(q) = 1/(1+q^2+lambda^2)^(3/2)
-                    double cq_sqrt = sqrt(2*M_PI*lambda*lambda/((1+lambda*lambda*q_sq)*sqrt((1+lambda*lambda*q_sq))));
-                    double prefactor = sqrt(D)*sqrt(Lx*Ly)*cq_sqrt;
+                    double prefactor = sqrt(D*Lx*Ly*cq(i,j));
                     for(int mu=0; mu<2; mu++){
                         xi_q(i,j)(mu) = prefactor*get_rnd_gauss_fourier_2D(i,j);
                     }
@@ -100,11 +117,17 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
             xi_q(i) = arma::cx_vec(1, arma::fill::zeros);
         }
 
+        //Compute normalized q-space correlation function
+        arma::vec cq(nx, arma::fill::zeros);
+        for(int i=0; i<nx; i++) {
+            double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx));
+            cq(i) = 2*lambda/(1+lambda*lambda*q_sq);
+        }
+        cq = cq/(arma::accu(cq)/(nx)); //normalize such that f(r=0)=1
+
         //Initialize q field to ensure stationarity
         for(int i=0; i<nx/2+1; i++) {
-            double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx));
-            double prefactor = sqrt(D)*sqrt(Lx)*sqrt(2*lambda)/sqrt(1+lambda*lambda*q_sq);
-
+            double prefactor = sqrt(D*Lx*cq(i));
             xi_q(i)(0) = prefactor*get_rnd_gauss_fourier_1D(i);
             if(i>0) xi_q(nx-i)(0) = std::conj(xi_q(i)(0));
         }
@@ -427,6 +450,18 @@ void Generator::step(double dt)
             }
         }
 
+        //Compute normalized q-space correlation function
+        arma::cube cq(nx, ny, nz, arma::fill::zeros);
+        for(int i=0; i<nx; i++) {
+            for(int j=0; j<ny; j++) {
+                for(int k=0; k<nz; k++) {
+                    double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly) + k*k/(Lz*Lz));
+                    cq(i,j,k) = 8*M_PI*lambda*lambda*lambda/((1+lambda*lambda*q_sq)*(1+lambda*lambda*q_sq));
+                }
+            }
+        }
+        cq = cq/(arma::accu(cq)/(nx*ny*nz)); //normalize such that f(r=0)=1
+
         //Compute noise increment
         arma::cube is_filled(nx, ny, nz, arma::fill::zeros);
         for(int i=0; i<nx; i++) {
@@ -441,10 +476,7 @@ void Generator::step(double dt)
                     }
                     else
                     {
-                        double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly) + k*k/(Lz*Lz));
-                        //Assume that exponential is normalized, so prefactor is (8*M_PI*lambda*lambda*lambda)
-                        double cq_sqrt = sqrt(8*M_PI*lambda*lambda*lambda)/(1+lambda*lambda*q_sq);
-                        double prefactor = sqrt(2*D*dt*Lx*Ly*Lz/tau)*cq_sqrt;
+                        double prefactor = sqrt(2*D*dt*Lx*Ly*Lz*cq(i,j,k)/tau);
                         for(int mu=0; mu<3; mu++) {
                             noise_incr(i,j,k)(mu) = prefactor*get_rnd_gauss_fourier_3D(i,j,k);
                         }
@@ -480,6 +512,16 @@ void Generator::step(double dt)
             }
         }
 
+        //Compute normalized q-space correlation function
+        arma::mat cq(nx, ny, arma::fill::zeros);
+        for(int i=0; i<nx; i++) {
+            for(int j=0; j<ny; j++) {
+                double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly));
+                cq(i,j) = 2*M_PI*lambda*lambda/((1+lambda*lambda*q_sq)*sqrt((1+lambda*lambda*q_sq)));
+            }
+        }
+        cq = cq/(arma::accu(cq)/(nx*ny)); //normalize such that f(r=0)=1
+
         //Compute noise increment
         arma::mat is_filled(nx, ny, arma::fill::zeros);
         for(int i=0; i<nx; i++) {
@@ -492,9 +534,8 @@ void Generator::step(double dt)
                     is_filled(i,j)=1.0;
                 }
                 else {
-                    double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly));
-                    double cq_sqrt = sqrt(2*M_PI*lambda*lambda/((1+lambda*lambda*q_sq)*sqrt((1+lambda*lambda*q_sq))));
-                    double prefactor = sqrt(2*D*dt*Lx*Ly/tau)*cq_sqrt;
+
+                    double prefactor = sqrt(2*D*dt*Lx*Ly*cq(i,j)/tau);
                     for(int mu=0; mu<2; mu++) {
                         noise_incr(i,j)(mu) = prefactor*get_rnd_gauss_fourier_2D(i,j);
                     }
@@ -517,9 +558,16 @@ void Generator::step(double dt)
     else if (dim==1){
         arma::cx_vec noise_incr(nx);
 
-        for (int i=0; i<nx/2+1; i++) {
+        //Compute normalized q-space correlation function
+        arma::vec cq(nx, arma::fill::zeros);
+        for(int i=0; i<nx; i++) {
             double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx));
-            double prefactor = sqrt(2*D*dt/tau)*sqrt(Lx)*sqrt(2*lambda)/sqrt(1+lambda*lambda*q_sq);
+            cq(i) = 2*lambda/(1+lambda*lambda*q_sq);
+        }
+        cq = cq/(arma::accu(cq)/(nx)); //normalize such that f(r=0)=1
+
+        for (int i=0; i<nx/2+1; i++) {
+            double prefactor = sqrt(2*D*dt*Lx*cq(i)/tau);
             noise_incr(i) = prefactor*get_rnd_gauss_fourier_1D(i);
             if(i>0) noise_incr(nx-i) = std::conj(noise_incr(i));
         }
