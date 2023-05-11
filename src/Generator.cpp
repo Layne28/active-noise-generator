@@ -170,13 +170,13 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
                 }
                 else {
                     double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly));
-                    cq(i,j) = 2*M_PI*lambda*lambda/pow(1+lambda*lambda*q_sq,3.0/2.0);
+                    cq(i,j) = 2*M_PI*lambda*lambda*Lx*Ly/pow(1+lambda*lambda*q_sq,3.0/2.0);
                     is_filled(i,j)=1.0;
                 }
             }
         }
-        cq = cq/(arma::accu(cq)/(nx*ny)); //normalize such that f(r=0)=1
-        std::cout << "sum to 1? " << arma::accu(cq)/(nx*ny) << std::endl;
+        cq = cq/(arma::accu(cq)/(Lx*Ly)); //normalize such that f(r=0)=1
+        std::cout << "sum to 1? " << arma::accu(cq)/(Lx*Ly) << std::endl;
 
         //Initialize q field to ensure stationarity
         //create a cube to track which field values have been filled
@@ -599,8 +599,8 @@ void Generator::step(double dt)
             }
         }
         cq = cq/(arma::accu(cq)/(Lx*Ly*Lz)); //normalize such that f(r=0)=1
-        std::cout << "Lx, Ly, Lz: " << Lx << " " << Ly << " " << Lz << std::endl;
-        cq.save("cq_test.mat", arma::arma_ascii);
+        //std::cout << "Lx, Ly, Lz: " << Lx << " " << Ly << " " << Lz << std::endl;
+        //cq.save("cq_test.mat", arma::arma_ascii);
         //std::cout << "should be 1: " << arma::accu(cq)/(nx*nz*nz) << std::endl;
 
         //Compute noise increment
@@ -705,12 +705,12 @@ void Generator::step(double dt)
                 }
                 else {
                     double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly));
-                    cq(i,j) = 2*M_PI*lambda*lambda/pow(1+lambda*lambda*q_sq,3.0/2.0);
+                    cq(i,j) = 2*M_PI*lambda*lambda*Lx*Ly/pow(1+lambda*lambda*q_sq,3.0/2.0);
                     is_filled(i,j)=1.0;
                 }
             }
         }
-        cq = cq/(arma::accu(cq)/(nx*ny)); //normalize such that f(r=0)=1
+        cq = cq/(arma::accu(cq)/(Lx*Ly)); //normalize such that f(r=0)=1
 
         //Compute noise increment
         is_filled.zeros(nx, ny);

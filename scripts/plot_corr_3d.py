@@ -39,7 +39,7 @@ plt.savefig('./time_corr.png')
 
 fig, ax = plt.subplots(1,2)
 print('test: ', c_r[c_r.shape[0]//2,c_r.shape[1]//2,c_r.shape[2]//2-1])
-sim = ax[0].imshow(c_r[c_r.shape[0]//2,:,:])#,vmin=0,vmax=1)#, extent=positions)
+sim = ax[0].imshow(c_r[c_r.shape[0]//2,:,:],vmin=0,vmax=1)#, extent=positions)
 plt.colorbar(sim, ax=ax[0])
 
 theory = ax[1].imshow(np.exp(-r[c_r.shape[0]//2,:,:]/Lambda),vmin=0,vmax=1)

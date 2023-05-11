@@ -1,6 +1,6 @@
 #Generator
 dim = 3
-dx = 1.0
+dx = 0.5
 nx = 10
 ny = 10
 nz = 10

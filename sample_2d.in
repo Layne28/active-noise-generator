@@ -1,6 +1,6 @@
 #Generator
 dim = 2
-dx = 1.0
+dx = 0.5
 nx = 10
 ny = 10
 tau = 1.0
