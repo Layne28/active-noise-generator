@@ -47,8 +47,7 @@ int main(int argc, char * argv[])
     myNoiseGen.open_h5(output_dir);
 
     //Propagate an active noise trajectory
-    for(int t=0; t<nsteps; t++)
-    {
+    for(int t=0; t<nsteps; t++) {
         if(t%100==0) std::cout << "time: " << t*dt << std::endl;
         arma::field<arma::cx_vec> xi_r = myNoiseGen.get_xi_r(do_fft);
         if(t%freq==0) myNoiseGen.save_field(xi_r, output_dir, t, dt);

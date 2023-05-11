@@ -34,31 +34,103 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
         }
 
         //Compute normalized q-space correlation function
+        arma::cube is_filled(nx, ny, nz, arma::fill::zeros);
         arma::cube cq(nx, ny, nz, arma::fill::zeros);
         for(int i=0; i<nx; i++) {
             for(int j=0; j<ny; j++) {
                 for(int k=0; k<nz; k++) {
-                    double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly) + k*k/(Lz*Lz));
-                    cq(i,j,k) = 8*M_PI*lambda*lambda*lambda/((1+lambda*lambda*q_sq)*(1+lambda*lambda*q_sq));
+                    //check a bunch of conditions to enforce DFT symmetry
+                    if(is_filled((nx-i)%nx,(ny-j)%ny,(nz-k)%nz)==1) {
+                        cq(i,j,k) = cq((nx-i)%nx,(ny-j)%ny,(nz-k)%nz);
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else if(is_filled(i,(ny-j)%ny,(nz-k)%nz)==1) {
+                        cq(i,j,k) = cq(i,(ny-j)%ny,(nz-k)%nz);
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else if(is_filled((nx-i)%nx,j,(nz-k)%nz)==1) {
+                        cq(i,j,k) = cq((nx-i)%nx,j,(nz-k)%nz);
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else if(is_filled((nx-i)%nx,(ny-j)%ny,k)==1) {
+                        cq(i,j,k) = cq((nx-i)%nx,(ny-j)%ny,k);
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else if(is_filled((nx-i)%nx,j,k)==1) {
+                        cq(i,j,k) = cq((nx-i)%nx,j,k);
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else if(is_filled(i,(ny-j)%ny,k)==1) {
+                        cq(i,j,k) = cq(i,(ny-j)%ny,k);
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else if(is_filled(i,j,(nz-k)%nz)==1) {
+                        cq(i,j,k) = cq(i,j,(nz-k)%nz);
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else {
+                        double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly) + k*k/(Lz*Lz));
+                        cq(i,j,k) = 8*M_PI*lambda*lambda*lambda*Lx*Ly*Lz/((1+lambda*lambda*q_sq)*(1+lambda*lambda*q_sq));
+                        is_filled(i,j,k)=1.0;
+                    }
                 }
             }
         }
-        cq = cq/(arma::accu(cq)/(nx*ny*nz)); //normalize such that f(r=0)=1
+        cq = cq/(arma::accu(cq)/(Lx*Ly*Lz)); //normalize such that f(r=0)=1
+        std::cout << "sum to 1? " << arma::accu(cq) << std::endl;
 
         //Initialize q field to ensure stationarity
         //create a cube to track which field values have been filled
-        arma::cube is_filled(nx, ny, nz, arma::fill::zeros);
+        is_filled.zeros(nx, ny, nz);
         for(int i=0; i<nx; i++) {
             for(int j=0; j<ny; j++) {
                 for(int k=0; k<nz; k++) {
+                    //Check for pairs of values that are complex conjugates by symmetry
                     if(is_filled((nx-i)%nx,(ny-j)%ny,(nz-k)%nz)==1) {                    
                         for(int mu=0; mu<3; mu++) {
                             xi_q(i,j,k)(mu) = std::conj(xi_q((nx-i)%nx,(ny-j)%ny,(nz-k)%nz)(mu));
                         }
                         is_filled(i,j,k)=1.0;
                     }
+                    else if(is_filled((nx-i)%nx,(ny-j)%ny,k)==1) {                    
+                        for(int mu=0; mu<3; mu++) {
+                            xi_q(i,j,k)(mu) = std::conj(xi_q((nx-i)%nx,(ny-j)%ny,k)(mu));
+                        }
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else if(is_filled((nx-i)%nx,j,(nz-k)%nz)==1) {                    
+                        for(int mu=0; mu<3; mu++) {
+                            xi_q(i,j,k)(mu) = std::conj(xi_q((nx-i)%nx,j,(nz-k)%nz)(mu));
+                        }
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else if(is_filled(i,(ny-j)%ny,(nz-k)%nz)==1) {                    
+                        for(int mu=0; mu<3; mu++) {
+                            xi_q(i,j,k)(mu) = std::conj(xi_q(i,(ny-j)%ny,(nz-k)%nz)(mu));
+                        }
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else if(is_filled((nx-i)%nx,j,k)==1) {                    
+                        for(int mu=0; mu<3; mu++) {
+                            xi_q(i,j,k)(mu) = std::conj(xi_q((nx-i)%nx,j,k)(mu));
+                        }
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else if(is_filled(i,(ny-j)%ny,k)==1) {                    
+                        for(int mu=0; mu<3; mu++) {
+                            xi_q(i,j,k)(mu) = std::conj(xi_q(i,(ny-j)%ny,k)(mu));
+                        }
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else if(is_filled(i,j,(nz-k)%nz)==1) {                    
+                        for(int mu=0; mu<3; mu++) {
+                            xi_q(i,j,k)(mu) = std::conj(xi_q(i,j,(nz-k)%nz)(mu));
+                        }
+                        is_filled(i,j,k)=1.0;
+                    }
                     else {
                         double prefactor = sqrt(D*Lx*Ly*Lz*cq(i,j,k));
+                        //double prefactor = sqrt(D*Lx*Ly*Lz);
                         for(int mu=0; mu<3; mu++){
                             xi_q(i,j,k)(mu) = prefactor*get_rnd_gauss_fourier_3D(i,j,k);
                         }
@@ -84,10 +156,16 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
 
         for(int i=0; i<nx; i++) {
             for(int j=0; j<ny; j++) {
-                if(is_filled((nx-i)%nx,(ny-j)%ny)==1) {                    
-                    for(int mu=0; mu<2; mu++) {
-                        cq(i,j) = cq((nx-i)%nx,(ny-j)%ny);
-                    }
+                if(is_filled((nx-i)%nx,(ny-j)%ny)==1) {
+                    cq(i,j) = cq((nx-i)%nx,(ny-j)%ny);
+                    is_filled(i,j)=1.0;
+                }
+                else if(is_filled(i,(ny-j)%ny)==1) {
+                    cq(i,j) = cq(i,(ny-j)%ny);
+                    is_filled(i,j)=1.0;
+                }
+                else if(is_filled((nx-i)%nx,j)==1) {
+                    cq(i,j) = cq((nx-i)%nx,j);
                     is_filled(i,j)=1.0;
                 }
                 else {
@@ -98,6 +176,7 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
             }
         }
         cq = cq/(arma::accu(cq)/(nx*ny)); //normalize such that f(r=0)=1
+        std::cout << "sum to 1? " << arma::accu(cq)/(nx*ny) << std::endl;
 
         //Initialize q field to ensure stationarity
         //create a cube to track which field values have been filled
@@ -108,6 +187,18 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
                 if(is_filled((nx-i)%nx,(ny-j)%ny)==1) {                    
                     for(int mu=0; mu<2; mu++) {
                         xi_q(i,j)(mu) = std::conj(xi_q((nx-i)%nx,(ny-j)%ny)(mu));
+                    }
+                    is_filled(i,j)=1.0;
+                }
+                else if(is_filled(i,(ny-j)%ny)==1) {                    
+                    for(int mu=0; mu<2; mu++) {
+                        xi_q(i,j)(mu) = std::conj(xi_q(i,(ny-j)%ny)(mu));
+                    }
+                    is_filled(i,j)=1.0;
+                }
+                else if(is_filled((nx-i)%nx,j)==1) {                    
+                    for(int mu=0; mu<2; mu++) {
+                        xi_q(i,j)(mu) = std::conj(xi_q((nx-i)%nx,j)(mu));
                     }
                     is_filled(i,j)=1.0;
                 }
@@ -465,32 +556,104 @@ void Generator::step(double dt)
         }
 
         //Compute normalized q-space correlation function
+        arma::cube is_filled(nx, ny, nz, arma::fill::zeros);
         arma::cube cq(nx, ny, nz, arma::fill::zeros);
         for(int i=0; i<nx; i++) {
             for(int j=0; j<ny; j++) {
                 for(int k=0; k<nz; k++) {
-                    double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly) + k*k/(Lz*Lz));
-                    cq(i,j,k) = 8*M_PI*lambda*lambda*lambda/((1+lambda*lambda*q_sq)*(1+lambda*lambda*q_sq));
+                    //check a bunch of conditions to enforce DFT symmetry
+                    if(is_filled((nx-i)%nx,(ny-j)%ny,(nz-k)%nz)==1) {
+                        cq(i,j,k) = cq((nx-i)%nx,(ny-j)%ny,(nz-k)%nz);
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else if(is_filled(i,(ny-j)%ny,(nz-k)%nz)==1) {
+                        cq(i,j,k) = cq(i,(ny-j)%ny,(nz-k)%nz);
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else if(is_filled((nx-i)%nx,j,(nz-k)%nz)==1) {
+                        cq(i,j,k) = cq((nx-i)%nx,j,(nz-k)%nz);
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else if(is_filled((nx-i)%nx,(ny-j)%ny,k)==1) {
+                        cq(i,j,k) = cq((nx-i)%nx,(ny-j)%ny,k);
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else if(is_filled((nx-i)%nx,j,k)==1) {
+                        cq(i,j,k) = cq((nx-i)%nx,j,k);
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else if(is_filled(i,(ny-j)%ny,k)==1) {
+                        cq(i,j,k) = cq(i,(ny-j)%ny,k);
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else if(is_filled(i,j,(nz-k)%nz)==1) {
+                        cq(i,j,k) = cq(i,j,(nz-k)%nz);
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else {
+                        double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly) + k*k/(Lz*Lz));
+                        cq(i,j,k) = 8*M_PI*lambda*lambda*lambda*Lx*Ly*Lz/((1+lambda*lambda*q_sq)*(1+lambda*lambda*q_sq));
+                        is_filled(i,j,k)=1.0;
+                    }
                 }
             }
         }
-        cq = cq/(arma::accu(cq)/(nx*ny*nz)); //normalize such that f(r=0)=1
+        cq = cq/(arma::accu(cq)/(Lx*Ly*Lz)); //normalize such that f(r=0)=1
+        std::cout << "Lx, Ly, Lz: " << Lx << " " << Ly << " " << Lz << std::endl;
+        cq.save("cq_test.mat", arma::arma_ascii);
+        //std::cout << "should be 1: " << arma::accu(cq)/(nx*nz*nz) << std::endl;
 
         //Compute noise increment
-        arma::cube is_filled(nx, ny, nz, arma::fill::zeros);
+        is_filled.zeros(nx, ny, nz);
         for(int i=0; i<nx; i++) {
             for(int j=0; j<ny; j++) {
                 for(int k=0; k<nz; k++) {
                     //Check for pairs of values that are complex conjugates by symmetry
-                    if(is_filled((nx-i)%nx,(ny-j)%ny,(nz-k)%nz)==1) {
+                    if(is_filled((nx-i)%nx,(ny-j)%ny,(nz-k)%nz)==1) {                    
                         for(int mu=0; mu<3; mu++) {
                             noise_incr(i,j,k)(mu) = std::conj(noise_incr((nx-i)%nx,(ny-j)%ny,(nz-k)%nz)(mu));
                         }
                         is_filled(i,j,k)=1.0;
                     }
-                    else
-                    {
+                    else if(is_filled((nx-i)%nx,(ny-j)%ny,k)==1) {                    
+                        for(int mu=0; mu<3; mu++) {
+                            noise_incr(i,j,k)(mu) = std::conj(noise_incr((nx-i)%nx,(ny-j)%ny,k)(mu));
+                        }
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else if(is_filled((nx-i)%nx,j,(nz-k)%nz)==1) {                    
+                        for(int mu=0; mu<3; mu++) {
+                            noise_incr(i,j,k)(mu) = std::conj(noise_incr((nx-i)%nx,j,(nz-k)%nz)(mu));
+                        }
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else if(is_filled(i,(ny-j)%ny,(nz-k)%nz)==1) {                    
+                        for(int mu=0; mu<3; mu++) {
+                            noise_incr(i,j,k)(mu) = std::conj(noise_incr(i,(ny-j)%ny,(nz-k)%nz)(mu));
+                        }
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else if(is_filled((nx-i)%nx,j,k)==1) {                    
+                        for(int mu=0; mu<3; mu++) {
+                            noise_incr(i,j,k)(mu) = std::conj(noise_incr((nx-i)%nx,j,k)(mu));
+                        }
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else if(is_filled(i,(ny-j)%ny,k)==1) {                    
+                        for(int mu=0; mu<3; mu++) {
+                            noise_incr(i,j,k)(mu) = std::conj(noise_incr(i,(ny-j)%ny,k)(mu));
+                        }
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else if(is_filled(i,j,(nz-k)%nz)==1) {                    
+                        for(int mu=0; mu<3; mu++) {
+                            noise_incr(i,j,k)(mu) = std::conj(noise_incr(i,j,(nz-k)%nz)(mu));
+                        }
+                        is_filled(i,j,k)=1.0;
+                    }
+                    else {
                         double prefactor = sqrt(2*D*dt*Lx*Ly*Lz*cq(i,j,k)/tau);
+                        //double prefactor = sqrt(2*D*dt*Lx*Ly*Lz/tau);
                         for(int mu=0; mu<3; mu++) {
                             noise_incr(i,j,k)(mu) = prefactor*get_rnd_gauss_fourier_3D(i,j,k);
                         }
@@ -501,14 +664,10 @@ void Generator::step(double dt)
         }
 
         //Update noise according to its OU dynamics
-        for(int i=0; i<nx; i++)
-        {
-            for(int j=0; j<ny; j++)
-            {
-                for(int k=0; k<nz; k++)
-                {
-                    for(int mu=0; mu<3; mu++)
-                    {
+        for(int i=0; i<nx; i++) {
+            for(int j=0; j<ny; j++) {
+                for(int k=0; k<nz; k++) {
+                    for(int mu=0; mu<3; mu++) {
                         xi_q(i,j,k)(mu) += (-dt)/tau*xi_q(i,j,k)(mu) + noise_incr(i,j,k)(mu);
                     }
                 }
@@ -532,10 +691,16 @@ void Generator::step(double dt)
 
         for(int i=0; i<nx; i++) {
             for(int j=0; j<ny; j++) {
-                if(is_filled((nx-i)%nx,(ny-j)%ny)==1) {                    
-                    for(int mu=0; mu<2; mu++) {
-                        cq(i,j) = cq((nx-i)%nx,(ny-j)%ny);
-                    }
+                if(is_filled((nx-i)%nx,(ny-j)%ny)==1) {
+                    cq(i,j) = cq((nx-i)%nx,(ny-j)%ny);
+                    is_filled(i,j)=1.0;
+                }
+                else if(is_filled(i,(ny-j)%ny)==1) {                    
+                    cq(i,j) = cq(i,(ny-j)%ny);
+                    is_filled(i,j)=1.0;
+                }
+                else if(is_filled((nx-i)%nx,j)==1) {                    
+                    cq(i,j) = cq((nx-i)%nx,j);
                     is_filled(i,j)=1.0;
                 }
                 else {
@@ -558,8 +723,19 @@ void Generator::step(double dt)
                     }
                     is_filled(i,j)=1.0;
                 }
+                else if(is_filled(i,(ny-j)%ny)==1) {
+                    for(int mu=0; mu<2; mu++) {
+                        noise_incr(i,j)(mu) = std::conj(noise_incr(i,(ny-j)%ny)(mu));
+                    }
+                    is_filled(i,j)=1.0;
+                }
+                else if(is_filled((nx-i)%nx,j)==1) {
+                    for(int mu=0; mu<2; mu++) {
+                        noise_incr(i,j)(mu) = std::conj(noise_incr((nx-i)%nx,j)(mu));
+                    }
+                    is_filled(i,j)=1.0;
+                }
                 else {
-
                     double prefactor = sqrt(2*D*dt*Lx*Ly*cq(i,j)/tau);
                     //double prefactor = sqrt((1-exp(-2*D*dt/tau))*Lx*Ly*cq(i,j));
                     for(int mu=0; mu<2; mu++) {

@@ -1,8 +1,9 @@
 #Generator
-dim = 2
+dim = 3
 dx = 1.0
 nx = 10
 ny = 10
+nz = 10
 tau = 1.0
 lambda = 1.0
 D = 1.0
@@ -12,6 +13,6 @@ do_fft = 1
 dt = 0.001
 
 #Observer
-output_dir = /work/laynefrechette/active-noise/2d/
+output_dir = /work/laynefrechette/active-noise/3d/
 freq = 100
 

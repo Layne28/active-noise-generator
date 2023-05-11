@@ -1,0 +1,16 @@
+Created temporary directory: /tmp/pip-ephem-wheel-cache-voqb008e
+Created temporary directory: /tmp/pip-req-tracker-amn_c5we
+Created requirements tracker '/tmp/pip-req-tracker-amn_c5we'
+Created temporary directory: /tmp/pip-install-qx_0cbra
+Cleaning up...
+Removed build tracker '/tmp/pip-req-tracker-amn_c5we'
+ERROR: You must give at least one requirement to install (see "pip help install")
+Exception information:
+Traceback (most recent call last):
+  File "/share/software/languages/ANACONDA/5.3_py3/lib/python3.6/site-packages/pip/_internal/cli/base_command.py", line 143, in main
+    status = self.run(options, args)
+  File "/share/software/languages/ANACONDA/5.3_py3/lib/python3.6/site-packages/pip/_internal/commands/install.py", line 293, in run
+    self.name, wheel_cache
+  File "/share/software/languages/ANACONDA/5.3_py3/lib/python3.6/site-packages/pip/_internal/cli/base_command.py", line 252, in populate_requirement_set
+    '(see "pip help %(name)s")' % opts)
+pip._internal.exceptions.CommandError: You must give at least one requirement to install (see "pip help install")

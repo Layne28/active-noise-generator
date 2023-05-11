@@ -36,10 +36,12 @@ def main():
     noise = np.stack([noise_x, noise_y], axis=-1)
     print(noise.shape)
 
-    delta_t = times[1]-times[0]
+    if times.shape[0]>1:
+        delta_t = times[1]-times[0]
+    else:
+        delta_t = 1
     frame_diff_max = int(tau_max/delta_t) #max number of data points to which to compute correlation function
     print(frame_diff_max)
-
 
     print('Loaded data.')
 
@@ -54,21 +56,26 @@ def main():
     corr_file.create_dataset('/parameters/D', data=D)
 
     #Compute C(t)
-    print('c0_test: ', get_corr_t0_test(noise, frame_diff_max))
+    ct0 = get_corr_t0_test(noise, frame_diff_max)
+    print('intial frame correlation: ', ct0)
     c_t = get_corr_t(noise, frame_diff_max)
     print('time zero corr: ', c_t[0])
 
     corr_file.create_dataset('/corr_t/value', data=c_t) 
 
     #Compute C(r)
-    #corr_file.create_dataset('/corr_q/corr', data=c_q)
+    #c_r, pos = get_corr_r(noise, dims, dx)
+    c_r, pos = get_corr_r(noise, dims, dx)
+    print(np.unravel_index(np.argmax(c_r), c_r.shape))
+    #print(pos)
+    corr_file.create_dataset('/corr_r/value', data=c_r)
+    corr_file.create_dataset('/corr_r/position', data=pos)
 
 @numba.jit(nopython=True) 
 def get_corr_t(xi_mat, tmax):
     nx = xi_mat.shape[1]
     ny = xi_mat.shape[2]
     ndim = xi_mat.shape[3]
-    print(ndim)
     c_t = np.zeros(tmax)
     for t in range(tmax):
         #take inner product of xi_r(t) and xi_r(t+delta_t) and average over t and r
@@ -79,6 +86,74 @@ def get_corr_t(xi_mat, tmax):
         c_t[t] /= (nx*ny*ndim)
     return c_t
 
+@numba.jit(nopython=True) 
+def get_corr_r(xi_mat, dims, dx):
+    tmax = xi_mat.shape[0]
+    nx = xi_mat.shape[1]
+    ny = xi_mat.shape[2]
+    ndim = xi_mat.shape[3]
+    print(tmax)
+
+    c_r = np.zeros((nx,ny))
+    pos = np.zeros((nx,ny,ndim))
+    counts = np.zeros((nx,ny))
+
+    for i1 in range(nx):
+        for j1 in range(ny):
+            for i2 in range(nx):
+                for j2 in range(ny):
+
+                    #get "distance" on grid
+                    xind = i2-i1
+                    yind = j2-j1
+
+                    #apply pbc
+                    if xind<(-nx//2):
+                        xind += nx
+                    if xind>=(nx//2):
+                        xind -= nx
+                    if yind<(-ny//2):
+                        yind += ny
+                    if yind>=(ny//2):
+                        yind -= ny
+
+                    pos[xind+nx//2, yind+ny//2, 0] = dx*xind
+                    pos[xind+nx//2, yind+ny//2, 1] = dx*yind
+                    counts[xind+nx//2, yind+ny//2] += 1
+
+    print('r=0 count: ', counts[nx//2,ny//2])
+
+    #for t in range(tmax):
+    for i1 in range(nx):
+        for j1 in range(ny):
+            for i2 in range(nx):
+                for j2 in range(ny):
+                    
+                    #get "distance" on grid
+                    xind = i2-i1
+                    yind = j2-j1
+
+                    #apply pbc
+                    if xind<(-nx//2):
+                        xind += nx
+                    if xind>=(nx//2):
+                        xind -= nx
+                    if yind<(-ny//2):
+                        yind += ny
+                    if yind>=(ny//2):
+                        yind -= ny
+
+                    for d in range(ndim):
+                        c_r[xind+nx//2, yind+ny//2] += np.mean(xi_mat[:,i1,j1,d]*xi_mat[:,i2,j2,d])/counts[xind+nx//2, yind+ny//2]
+
+    c_r /= ndim
+
+    print(c_r[nx//2,ny//2])
+    print(c_r[nx//2-1,ny//2])
+    print(np.max(c_r))
+    
+    return c_r, pos
+                                                  
 @numba.jit(nopython=True) 
 def get_corr_t0_test(xi_mat, tmax):
     nx = xi_mat.shape[1]
