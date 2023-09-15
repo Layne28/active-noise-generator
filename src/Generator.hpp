@@ -22,7 +22,7 @@ public:
     ParamDict params;
     arma::field<arma::cx_vec> xi_q;
 
-    double dx = 1.0;
+    std::vector<double> spacing;
     double tau = 1.0;
     double lambda = 1.0;
     double D = 1.0;

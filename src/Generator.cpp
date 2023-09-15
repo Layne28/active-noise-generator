@@ -2,7 +2,6 @@
 
 Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
 {
-    if(theParams.is_key("dx")) dx = std::stod(theParams.get_value("dx"));
     if(theParams.is_key("tau")) tau = std::stod(theParams.get_value("tau"));
     if(theParams.is_key("lambda")) lambda = std::stod(theParams.get_value("lambda"));
     if(theParams.is_key("D")) D = std::stod(theParams.get_value("D"));
@@ -13,9 +12,14 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
 
     if(theParams.is_key("dim")) dim = std::stoi(theParams.get_value("dim"));
 
-    Lx = nx*dx;
-    Ly = ny*dx;
-    Lz = nz*dx;
+    for(int i=0; i<3; i++) spacing.push_back(1.0);
+    if(theParams.is_key("dx")) spacing[0] = std::stod(theParams.get_value("dx"));
+    if(theParams.is_key("dy")) spacing[1] = std::stod(theParams.get_value("dy"));
+    if(theParams.is_key("dz")) spacing[2] = std::stod(theParams.get_value("dz"));
+
+    Lx = nx*spacing[0];
+    Ly = ny*spacing[1];
+    Lz = nz*spacing[2];
 
     //set RNG
     rg = the_rg;
@@ -77,7 +81,7 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
             }
         }
         cq = cq/(arma::accu(cq)/(Lx*Ly*Lz)); //normalize such that f(r=0)=1
-        std::cout << "sum to 1? " << arma::accu(cq) << std::endl;
+        std::cout << "sum to 1? " << arma::accu(cq)/(Lx*Ly*Lz) << std::endl;
 
         //Initialize q field to ensure stationarity
         //create a cube to track which field values have been filled
@@ -242,7 +246,7 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
         exit(-1);
     }
     
-    std::cout << "Initialized generator." << std::endl;
+    std::cout << "Initialized " << dim << "-dimensional generator." << std::endl;
 }
 
 Generator::~Generator() {}
@@ -807,20 +811,24 @@ void Generator::open_h5(std::string out_dir) {
         std::vector<int> dims{nx, ny, nz};
         DataSet dimensions = file.createDataSet<int>("/grid/dimensions", DataSpace::From(dims));
         dimensions.write(dims);
+        DataSet spacing_data = file.createDataSet<double>("/grid/spacing", DataSpace::From(spacing));
+        spacing_data.write(spacing);
     }
     else if (dim==2) {
         std::vector<int> dims{nx, ny};
         DataSet dimensions = file.createDataSet<int>("/grid/dimensions", DataSpace::From(dims));
-        dimensions.write(dims);        
+        dimensions.write(dims);
+        DataSet spacing_data = file.createDataSet<double>("/grid/spacing", DataSpace::From(spacing));
+        spacing_data.write(spacing);
     }
     else if (dim==1) {
         std::vector<int> dims{nx};
         DataSet dimensions = file.createDataSet<int>("/grid/dimensions", DataSpace::From(dims));
-        dimensions.write(dims);        
+        dimensions.write(dims);
+        DataSet spacing_data = file.createDataSet<double>("/grid/spacing", DataSpace::From(spacing));
+        spacing_data.write(spacing);    
     }
 
-    DataSet spacing = file.createDataSet<double>("/grid/spacing", DataSpace::From(dx));
-    spacing.write(dx);
 
     DataSet lambda_value = file.createDataSet<double>("/parameters/lambda", DataSpace::From(lambda));
     lambda_value.write(lambda);

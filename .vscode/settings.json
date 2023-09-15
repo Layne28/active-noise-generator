@@ -49,6 +49,18 @@
         "typeinfo": "cpp",
         "utility": "cpp",
         "codecvt": "cpp",
-        "iomanip": "cpp"
+        "iomanip": "cpp",
+        "bitset": "cpp",
+        "cstdarg": "cpp",
+        "list": "cpp",
+        "algorithm": "cpp",
+        "filesystem": "cpp",
+        "iterator": "cpp",
+        "memory_resource": "cpp",
+        "random": "cpp",
+        "regex": "cpp",
+        "set": "cpp",
+        "future": "cpp",
+        "variant": "cpp"
     }
 }
