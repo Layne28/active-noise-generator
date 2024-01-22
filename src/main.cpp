@@ -3,21 +3,23 @@
 
 #include "Generator.hpp"
 #include "CustomRandom.hpp"
+#include "IO.hpp"
 
 int main(int argc, char * argv[])
 {
     //Set defaults
     std::string param_file = "sample.in";
+    std::string seed_file = "";
     long unsigned int seed = 1;
     int nsteps = 100;
 
     //Read in command line arguments if supplied
     if (argc>1) param_file = argv[1];
-    if (argc>2) seed = std::atoi(argv[2]);
-    if (argc>3) nsteps = std::atoi(argv[3]);
+    if (argc>2) nsteps = std::atoi(argv[2]);
+    if (argc>3) seed = std::atoi(argv[3]);
+    if (argc>4) seed_file = argv[4];
 
     std::cout << "Using input parameter file: " << param_file << std::endl;
-    std::cout << "Using seed: " << seed << std::endl;
     std::cout << "Running for " << nsteps << " steps.\n";
 
     //Read in parameters from file
@@ -28,15 +30,18 @@ int main(int argc, char * argv[])
     std::string output_dir = "/";
     int freq = 1;
     double dt = 1e-3;
-    int do_fft = 0;
+    int do_fft = 1;
     int dim = 1;
-    if(myParams.is_key("output_dir")) output_dir = myParams.get_value("output_dir");
     if(myParams.is_key("freq")) freq = std::stoi(myParams.get_value("freq"));
     if(myParams.is_key("dt")) dt = std::stod(myParams.get_value("dt"));
     if(myParams.is_key("do_fft")) do_fft = std::stoi(myParams.get_value("do_fft"));
     if(myParams.is_key("dim")) dim = std::stoi(myParams.get_value("dim"));
 
     //Initialize random number generator
+    determine_seed(seed, seed_file, myParams);
+    if(myParams.is_key("output_dir")) output_dir = myParams.get_value("output_dir");
+    std::cout << myParams.get_value("output_dir") << std::endl;
+    std::cout << "Using seed: " << seed << std::endl;
     gsl_rng *myRNG = CustomRandom::init_rng(seed);
 
     //Initialize active noise generator

@@ -51,6 +51,12 @@ public:
     std::complex<double> get_rnd_gauss_fourier_2D(int i, int j);
     std::complex<double> get_rnd_gauss_fourier_1D(int i);
 
+    //Get arrays of Gaussian random numbers
+    arma::mat get_rnd_gauss_arr_2d(double var);
+
+    //Take fourier transform
+    arma::cx_mat do_fourier_2d(arma::mat mymat);
+
     //Advance time
     void step(double dt);
 
