@@ -16,8 +16,6 @@ def main():
 
     data = h5py.File(in_folder + '/noise_traj.h5', 'r')
 
-    tau_max = 5 #max time to which to compute correlation function
-
     if not os.path.exists(out_folder):
         print('Output folder does not exist. Creating it now.')
         os.makedirs(out_folder)
@@ -30,6 +28,8 @@ def main():
     tau = np.array(data['/parameters/tau'])
     Lambda = np.array(data['/parameters/lambda'])
     D = np.array(data['/parameters/D'])
+
+    tau_max = 5*tau #max time to which to compute correlation function
 
     data.close()
 
@@ -57,7 +57,7 @@ def main():
 
     #Compute C(t)
     ct0 = get_corr_t0_test(noise, frame_diff_max)
-    print('intial frame correlation: ', ct0)
+    print('initial frame correlation: ', ct0)
     c_t = get_corr_t(noise, frame_diff_max)
     print('time zero corr: ', c_t[0])
 
@@ -117,8 +117,8 @@ def get_corr_r(xi_mat, dims, dx):
                     if yind>=(ny//2):
                         yind -= ny
 
-                    pos[xind+nx//2, yind+ny//2, 0] = dx*xind
-                    pos[xind+nx//2, yind+ny//2, 1] = dx*yind
+                    pos[xind+nx//2, yind+ny//2, 0] = dx[0]*xind
+                    pos[xind+nx//2, yind+ny//2, 1] = dx[1]*yind
                     counts[xind+nx//2, yind+ny//2] += 1
 
     print('r=0 count: ', counts[nx//2,ny//2])

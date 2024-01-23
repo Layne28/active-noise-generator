@@ -30,7 +30,7 @@ plt.plot(times,D*np.exp(-times/tau),linewidth=0.9,label='theory') #include tau i
 plt.axhline(y=0, color='black', linestyle='--')
 plt.xlabel(r'$t$')
 plt.ylabel(r'$C(t)$')
-plt.xlim([0,5])
+#plt.xlim([0,5])
 plt.legend()
 plt.savefig('./time_corr.png')
 

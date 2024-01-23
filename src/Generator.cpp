@@ -44,9 +44,9 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
 
         //Take Fourier transform
         //Multiply by sqrt(N/2) to get unit variance in reciprocal space
-        arma::cx_cube fourier_white_noise_x = sqrt(nx*ny*nz/2)*do_fourier_3d(real_white_noise_x);
-        arma::cx_cube fourier_white_noise_y = sqrt(nx*ny*nz/2)*do_fourier_3d(real_white_noise_y);
-        arma::cx_cube fourier_white_noise_z = sqrt(nx*ny*nz/2)*do_fourier_3d(real_white_noise_z);
+        arma::cx_cube fourier_white_noise_x = sqrt(nx*ny*nz)*do_fourier_3d(real_white_noise_x);
+        arma::cx_cube fourier_white_noise_y = sqrt(nx*ny*nz)*do_fourier_3d(real_white_noise_y);
+        arma::cx_cube fourier_white_noise_z = sqrt(nx*ny*nz)*do_fourier_3d(real_white_noise_z);
 
         //Get spatial correlation function
         arma::cube cq = get_cq_3d();
@@ -79,8 +79,8 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
 
         //Take Fourier transform
         //Multiply by sqrt(N/2) to get unit variance in reciprocal space
-        arma::cx_mat fourier_white_noise_x = sqrt(nx*ny/2)*do_fourier_2d(real_white_noise_x);
-        arma::cx_mat fourier_white_noise_y = sqrt(nx*ny/2)*do_fourier_2d(real_white_noise_y);
+        arma::cx_mat fourier_white_noise_x = sqrt(nx*ny)*do_fourier_2d(real_white_noise_x);
+        arma::cx_mat fourier_white_noise_y = sqrt(nx*ny)*do_fourier_2d(real_white_noise_y);
 
         //Get spatial correlation function
         arma::mat cq = get_cq_2d();
@@ -107,7 +107,7 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
 
         //Take Fourier transform
         //Multiply by sqrt(N/2) to get unit variance in reciprocal space
-        arma::cx_vec fourier_white_noise_x = sqrt(nx/2)*do_fourier_1d(real_white_noise_x);
+        arma::cx_vec fourier_white_noise_x = sqrt(nx)*do_fourier_1d(real_white_noise_x);
 
         //Get spatial correlation function
         arma::vec cq = get_cq_1d();
@@ -647,9 +647,9 @@ void Generator::step(double dt)
 
         //Take Fourier transform
         //Multiply by sqrt(N/2) to get unit variance in reciprocal space
-        arma::cx_cube fourier_white_noise_x = sqrt(nx*ny*nz/2)*do_fourier_3d(real_white_noise_x);
-        arma::cx_cube fourier_white_noise_y = sqrt(nx*ny*nz/2)*do_fourier_3d(real_white_noise_y);
-        arma::cx_cube fourier_white_noise_z = sqrt(nx*ny*nz/2)*do_fourier_3d(real_white_noise_z);
+        arma::cx_cube fourier_white_noise_x = sqrt(nx*ny*nz)*do_fourier_3d(real_white_noise_x);
+        arma::cx_cube fourier_white_noise_y = sqrt(nx*ny*nz)*do_fourier_3d(real_white_noise_y);
+        arma::cx_cube fourier_white_noise_z = sqrt(nx*ny*nz)*do_fourier_3d(real_white_noise_z);
 
         //Get spatial correlation function
         arma::cube cq = get_cq_3d();
@@ -695,8 +695,8 @@ void Generator::step(double dt)
 
         //Take Fourier transform
         //Multiply by sqrt(N/2) to get unit variance in reciprocal space
-        arma::cx_mat fourier_white_noise_x = sqrt(nx*ny/2)*do_fourier_2d(real_white_noise_x);
-        arma::cx_mat fourier_white_noise_y = sqrt(nx*ny/2)*do_fourier_2d(real_white_noise_y);
+        arma::cx_mat fourier_white_noise_x = sqrt(nx*ny)*do_fourier_2d(real_white_noise_x);
+        arma::cx_mat fourier_white_noise_y = sqrt(nx*ny)*do_fourier_2d(real_white_noise_y);
 
         //Get spatial correlation function
         arma::mat cq = get_cq_2d();
@@ -731,7 +731,7 @@ void Generator::step(double dt)
 
         //Take Fourier transform
         //Multiply by sqrt(N/2) to get unit variance in reciprocal space
-        arma::cx_vec fourier_white_noise_x = sqrt(nx/2)*do_fourier_1d(real_white_noise_x);
+        arma::cx_vec fourier_white_noise_x = sqrt(nx)*do_fourier_1d(real_white_noise_x);
 
         //Get spatial correlation function
         arma::vec cq = get_cq_1d();
