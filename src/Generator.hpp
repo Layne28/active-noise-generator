@@ -52,10 +52,19 @@ public:
     std::complex<double> get_rnd_gauss_fourier_1D(int i);
 
     //Get arrays of Gaussian random numbers
+    arma::vec get_rnd_gauss_arr_1d(double var);
     arma::mat get_rnd_gauss_arr_2d(double var);
+    arma::cube get_rnd_gauss_arr_3d(double var);
 
     //Take fourier transform
+    arma::cx_vec do_fourier_1d(arma::vec mymat);
     arma::cx_mat do_fourier_2d(arma::mat mymat);
+    arma::cx_cube do_fourier_3d(arma::cube mymat);
+
+    //Get spatial correlation functions
+    arma::vec get_cq_1d();
+    arma::mat get_cq_2d();
+    arma::cube get_cq_3d();
 
     //Advance time
     void step(double dt);

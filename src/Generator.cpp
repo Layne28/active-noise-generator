@@ -37,109 +37,28 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
             }
         }
 
-        //Compute normalized q-space correlation function
-        arma::cube is_filled(nx, ny, nz, arma::fill::zeros);
-        arma::cube cq(nx, ny, nz, arma::fill::zeros);
-        for(int i=0; i<nx; i++) {
-            for(int j=0; j<ny; j++) {
-                for(int k=0; k<nz; k++) {
-                    //check a bunch of conditions to enforce DFT symmetry
-                    if(is_filled((nx-i)%nx,(ny-j)%ny,(nz-k)%nz)==1) {
-                        cq(i,j,k) = cq((nx-i)%nx,(ny-j)%ny,(nz-k)%nz);
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled(i,(ny-j)%ny,(nz-k)%nz)==1) {
-                        cq(i,j,k) = cq(i,(ny-j)%ny,(nz-k)%nz);
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled((nx-i)%nx,j,(nz-k)%nz)==1) {
-                        cq(i,j,k) = cq((nx-i)%nx,j,(nz-k)%nz);
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled((nx-i)%nx,(ny-j)%ny,k)==1) {
-                        cq(i,j,k) = cq((nx-i)%nx,(ny-j)%ny,k);
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled((nx-i)%nx,j,k)==1) {
-                        cq(i,j,k) = cq((nx-i)%nx,j,k);
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled(i,(ny-j)%ny,k)==1) {
-                        cq(i,j,k) = cq(i,(ny-j)%ny,k);
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled(i,j,(nz-k)%nz)==1) {
-                        cq(i,j,k) = cq(i,j,(nz-k)%nz);
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else {
-                        double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly) + k*k/(Lz*Lz));
-                        cq(i,j,k) = 8*M_PI*lambda*lambda*lambda*Lx*Ly*Lz/((1+lambda*lambda*q_sq)*(1+lambda*lambda*q_sq));
-                        is_filled(i,j,k)=1.0;
-                    }
-                }
-            }
-        }
-        cq = cq/(arma::accu(cq)/(Lx*Ly*Lz)); //normalize such that f(r=0)=1
-        std::cout << "sum to 1? " << arma::accu(cq)/(Lx*Ly*Lz) << std::endl;
+        //White noise array in real space
+        arma::cube real_white_noise_x = get_rnd_gauss_arr_3d(1.0);
+        arma::cube real_white_noise_y = get_rnd_gauss_arr_3d(1.0);
+        arma::cube real_white_noise_z = get_rnd_gauss_arr_3d(1.0);
 
-        //Initialize q field to ensure stationarity
-        //create a cube to track which field values have been filled
-        is_filled.zeros(nx, ny, nz);
+        //Take Fourier transform
+        //Multiply by sqrt(N/2) to get unit variance in reciprocal space
+        arma::cx_cube fourier_white_noise_x = sqrt(nx*ny*nz/2)*do_fourier_3d(real_white_noise_x);
+        arma::cx_cube fourier_white_noise_y = sqrt(nx*ny*nz/2)*do_fourier_3d(real_white_noise_y);
+        arma::cx_cube fourier_white_noise_z = sqrt(nx*ny*nz/2)*do_fourier_3d(real_white_noise_z);
+
+        //Get spatial correlation function
+        arma::cube cq = get_cq_3d();
+
+        //Convolve white noise with correlation matrix
         for(int i=0; i<nx; i++) {
             for(int j=0; j<ny; j++) {
                 for(int k=0; k<nz; k++) {
-                    //Check for pairs of values that are complex conjugates by symmetry
-                    if(is_filled((nx-i)%nx,(ny-j)%ny,(nz-k)%nz)==1) {                    
-                        for(int mu=0; mu<3; mu++) {
-                            xi_q(i,j,k)(mu) = std::conj(xi_q((nx-i)%nx,(ny-j)%ny,(nz-k)%nz)(mu));
-                        }
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled((nx-i)%nx,(ny-j)%ny,k)==1) {                    
-                        for(int mu=0; mu<3; mu++) {
-                            xi_q(i,j,k)(mu) = std::conj(xi_q((nx-i)%nx,(ny-j)%ny,k)(mu));
-                        }
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled((nx-i)%nx,j,(nz-k)%nz)==1) {                    
-                        for(int mu=0; mu<3; mu++) {
-                            xi_q(i,j,k)(mu) = std::conj(xi_q((nx-i)%nx,j,(nz-k)%nz)(mu));
-                        }
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled(i,(ny-j)%ny,(nz-k)%nz)==1) {                    
-                        for(int mu=0; mu<3; mu++) {
-                            xi_q(i,j,k)(mu) = std::conj(xi_q(i,(ny-j)%ny,(nz-k)%nz)(mu));
-                        }
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled((nx-i)%nx,j,k)==1) {                    
-                        for(int mu=0; mu<3; mu++) {
-                            xi_q(i,j,k)(mu) = std::conj(xi_q((nx-i)%nx,j,k)(mu));
-                        }
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled(i,(ny-j)%ny,k)==1) {                    
-                        for(int mu=0; mu<3; mu++) {
-                            xi_q(i,j,k)(mu) = std::conj(xi_q(i,(ny-j)%ny,k)(mu));
-                        }
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled(i,j,(nz-k)%nz)==1) {                    
-                        for(int mu=0; mu<3; mu++) {
-                            xi_q(i,j,k)(mu) = std::conj(xi_q(i,j,(nz-k)%nz)(mu));
-                        }
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else {
-                        double prefactor = sqrt(D*Lx*Ly*Lz*cq(i,j,k));
-                        //double prefactor = sqrt(D*Lx*Ly*Lz);
-                        for(int mu=0; mu<3; mu++){
-                            xi_q(i,j,k)(mu) = prefactor*get_rnd_gauss_fourier_3D(i,j,k);
-                        }
-                        is_filled(i,j,k)=1.0;
-                    }
+                    double prefactor = sqrt(D*Lx*Ly*Lz*cq(i,j,k));
+                    xi_q(i,j,k)(0) = prefactor*fourier_white_noise_x(i,j,k);
+                    xi_q(i,j,k)(1) = prefactor*fourier_white_noise_y(i,j,k);
+                    xi_q(i,j,k)(2) = prefactor*fourier_white_noise_z(i,j,k);
                 }
             }
         }
@@ -163,29 +82,8 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
         arma::cx_mat fourier_white_noise_x = sqrt(nx*ny/2)*do_fourier_2d(real_white_noise_x);
         arma::cx_mat fourier_white_noise_y = sqrt(nx*ny/2)*do_fourier_2d(real_white_noise_y);
 
-        //Get k vectors
-        arma::vec kVec_x(nx, arma::fill::zeros);
-        for(int i=0; i<nx; i++){
-            if(i<=nx/2) kVec_x(i) = (2*M_PI/Lx)*i;
-            else kVec_x(i) = (2*M_PI/Lx)*(i-nx);
-        }
-        arma::vec kVec_y(ny, arma::fill::zeros);
-        for(int i=0; i<ny; i++){
-            if(i<=ny/2) kVec_y(i) = (2*M_PI/Ly)*i;
-            else kVec_y(i) = (2*M_PI/Ly)*(i-ny);
-        }
-
-        //Compute normalized q-space correlation function
-        arma::mat cq(nx, ny, arma::fill::zeros);
-
-        for(int i=0; i<nx; i++) {
-            for(int j=0; j<ny; j++) {
-                double q_sq = kVec_x[i]*kVec_x[i] + kVec_y[j]*kVec_y[j];
-                cq(i,j) = 2*M_PI*lambda*lambda*Lx*Ly/pow(1+lambda*lambda*q_sq,3.0/2.0);
-            }
-        }
-        cq = cq/(arma::accu(cq)/(Lx*Ly)); //normalize such that f(r=0)=1
-        std::cout << "sum to 1? " << arma::accu(cq)/(Lx*Ly) << std::endl;
+        //Get spatial correlation function
+        arma::mat cq = get_cq_2d();
 
         //Convolve white noise with correlation matrix
         for(int i=0; i<nx; i++) {
@@ -204,21 +102,20 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
             xi_q(i) = arma::cx_vec(1, arma::fill::zeros);
         }
 
-        //Compute normalized q-space correlation function
-        arma::vec cq(nx, arma::fill::zeros);
+        //White noise array in real space
+        arma::vec real_white_noise_x = get_rnd_gauss_arr_1d(1.0);
 
-        //ERROR: fix this
+        //Take Fourier transform
+        //Multiply by sqrt(N/2) to get unit variance in reciprocal space
+        arma::cx_vec fourier_white_noise_x = sqrt(nx/2)*do_fourier_1d(real_white_noise_x);
+
+        //Get spatial correlation function
+        arma::vec cq = get_cq_1d();
+
+        //Convolve white noise with correlation matrix
         for(int i=0; i<nx; i++) {
-            double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx));
-            cq(i) = 2*lambda/(1+lambda*lambda*q_sq);
-        }
-        cq = cq/(arma::accu(cq)/(nx)); //normalize such that f(r=0)=1
-
-        //Initialize q field to ensure stationarity
-        for(int i=0; i<nx/2+1; i++) {
             double prefactor = sqrt(D*Lx*cq(i));
-            xi_q(i)(0) = prefactor*get_rnd_gauss_fourier_1D(i);
-            if(i>0) xi_q(nx-i)(0) = std::conj(xi_q(i)(0));
+            xi_q(i)(0) = prefactor*fourier_white_noise_x(i);
         }
     }
 
@@ -480,6 +377,29 @@ arma::field<arma::cx_vec> Generator::get_xi_r_fast()
     }
 }
 
+arma::cx_vec Generator::do_fourier_1d(arma::vec real_arr){
+    
+    arma::cx_vec fourier_arr(nx, arma::fill::zeros);
+    for(int i=0; i<nx; i++) {
+        fourier_arr(i) = real_arr(i);
+    }
+
+    //Fast Fourier transform w/ FFTW
+    fftw_complex *in_x;
+    fftw_plan px;
+
+    in_x = reinterpret_cast<fftw_complex*>(fourier_arr.memptr());
+    px = fftw_plan_dft_1d(nx, in_x, in_x, FFTW_BACKWARD, FFTW_ESTIMATE);
+
+    fftw_execute(px); 
+
+    fourier_arr = fourier_arr/(Lx);
+
+    fftw_destroy_plan(px);
+
+    return fourier_arr;
+}
+
 arma::cx_mat Generator::do_fourier_2d(arma::mat real_arr){
     
     arma::cx_mat fourier_arr(nx, ny, arma::fill::zeros);
@@ -499,6 +419,33 @@ arma::cx_mat Generator::do_fourier_2d(arma::mat real_arr){
     fftw_execute(px); 
 
     fourier_arr = fourier_arr/(Lx*Ly);
+
+    fftw_destroy_plan(px);
+
+    return fourier_arr;
+}
+
+arma::cx_cube Generator::do_fourier_3d(arma::cube real_arr){
+    
+    arma::cx_cube fourier_arr(nx, ny, nz, arma::fill::zeros);
+    for(int i=0; i<nx; i++) {
+        for(int j=0; j<ny; j++) {
+            for(int k=0; k<nz; k++) {
+                fourier_arr(i,j,k) = real_arr(i,j,k);
+            }
+        }
+    }
+
+    //Fast Fourier transform w/ FFTW
+    fftw_complex *in_x;
+    fftw_plan px;
+
+    in_x = reinterpret_cast<fftw_complex*>(fourier_arr.memptr());
+    px = fftw_plan_dft_3d(nx, ny, nz, in_x, in_x, FFTW_BACKWARD, FFTW_ESTIMATE);
+
+    fftw_execute(px); 
+
+    fourier_arr = fourier_arr/(Lx*Ly*Lz);
 
     fftw_destroy_plan(px);
 
@@ -552,12 +499,127 @@ std::complex<double> Generator::get_rnd_gauss_fourier_1D(int i)
     }
 }
 
+arma::vec Generator::get_cq_1d(){
+
+    //Get k vectors
+    arma::vec kVec_x(nx, arma::fill::zeros);
+    for(int i=0; i<nx; i++){
+        if(i<=nx/2) kVec_x(i) = (2*M_PI/Lx)*i;
+        else kVec_x(i) = (2*M_PI/Lx)*(i-nx);
+    }
+
+    //Compute normalized q-space correlation function
+    arma::vec cq(nx, arma::fill::zeros);
+    for(int i=0; i<nx; i++) {
+        double q_sq = kVec_x[i]*kVec_x[i];
+        cq(i) = 2*lambda/(1+lambda*lambda*q_sq);
+    }
+    cq = cq/(arma::accu(cq)/(Lx)); //normalize such that f(r=0)=1
+    if (fabs(arma::accu(cq)/(Lx)-1)>1e-10){
+        std::cout << "Warning: c(q) is not normalized: " << arma::accu(cq)/(Lx) << std::endl;
+    }
+
+    return cq;
+}
+
+arma::mat Generator::get_cq_2d(){
+
+    //Get k vectors
+    arma::vec kVec_x(nx, arma::fill::zeros);
+    for(int i=0; i<nx; i++){
+        if(i<=nx/2) kVec_x(i) = (2*M_PI/Lx)*i;
+        else kVec_x(i) = (2*M_PI/Lx)*(i-nx);
+    }
+    arma::vec kVec_y(ny, arma::fill::zeros);
+    for(int i=0; i<ny; i++){
+        if(i<=ny/2) kVec_y(i) = (2*M_PI/Ly)*i;
+        else kVec_y(i) = (2*M_PI/Ly)*(i-ny);
+    }
+
+    //Compute normalized q-space correlation function
+    arma::mat cq(nx, ny, arma::fill::zeros);
+
+    for(int i=0; i<nx; i++) {
+        for(int j=0; j<ny; j++) {
+            double q_sq = kVec_x[i]*kVec_x[i] + kVec_y[j]*kVec_y[j];
+            cq(i,j) = 2*M_PI*lambda*lambda*Lx*Ly/pow(1+lambda*lambda*q_sq,3.0/2.0);
+        }
+    }
+    cq = cq/(arma::accu(cq)/(Lx*Ly)); //normalize such that f(r=0)=1
+    if (fabs(arma::accu(cq)/(Lx*Ly)-1)>1e-10){
+        std::cout << "Warning: c(q) is not normalized: " << arma::accu(cq)/(Lx*Ly) << std::endl;
+    }
+
+    return cq;
+}
+
+arma::cube Generator::get_cq_3d(){
+
+    //Get k vectors
+    arma::vec kVec_x(nx, arma::fill::zeros);
+    for(int i=0; i<nx; i++){
+        if(i<=nx/2) kVec_x(i) = (2*M_PI/Lx)*i;
+        else kVec_x(i) = (2*M_PI/Lx)*(i-nx);
+    }
+    arma::vec kVec_y(ny, arma::fill::zeros);
+    for(int i=0; i<ny; i++){
+        if(i<=ny/2) kVec_y(i) = (2*M_PI/Ly)*i;
+        else kVec_y(i) = (2*M_PI/Ly)*(i-ny);
+    }
+    arma::vec kVec_z(nz, arma::fill::zeros);
+    for(int i=0; i<nz; i++){
+        if(i<=nz/2) kVec_z(i) = (2*M_PI/Lz)*i;
+        else kVec_z(i) = (2*M_PI/Lz)*(i-nz);
+    }
+
+    //Compute normalized q-space correlation function
+    arma::cube cq(nx, ny, nz, arma::fill::zeros);
+    for(int i=0; i<nx; i++) {
+        for(int j=0; j<ny; j++) {
+            for(int k=0; k<nz; k++) {
+                double q_sq = kVec_x[i]*kVec_x[i] + kVec_y[j]*kVec_y[j] + kVec_z[k]*kVec_z[k];
+                cq(i,j,k) = 8*M_PI*lambda*lambda*lambda*Lx*Ly*Lz/((1+lambda*lambda*q_sq)*(1+lambda*lambda*q_sq));
+            }
+        }
+    }
+    cq = cq/(arma::accu(cq)/(Lx*Ly*Lz)); //normalize such that f(r=0)=1
+    if (fabs(arma::accu(cq)/(Lx*Ly*Lz)-1)>1e-10){
+        std::cout << "Warning: c(q) is not normalized: " << arma::accu(cq)/(Lx*Ly*Lz) << std::endl;
+    }
+    
+    return cq;
+}
+
+arma::vec Generator::get_rnd_gauss_arr_1d(double var){
+
+    arma::vec mymat(nx, arma::fill::zeros);
+    for(int i=0; i<nx; i++){
+        mymat(i) = gsl_ran_gaussian(rg, var);
+    }
+
+    return mymat;
+} 
+
 arma::mat Generator::get_rnd_gauss_arr_2d(double var){
 
     arma::mat mymat(nx, ny, arma::fill::zeros);
     for(int i=0; i<nx; i++){
         for(int j=0; j<ny; j++){
             mymat(i,j) = gsl_ran_gaussian(rg, var);
+        }
+    }
+
+    return mymat;
+}
+
+arma::cube Generator::get_rnd_gauss_arr_3d(double var){
+
+    arma::cube mymat(nx, ny, nz, arma::fill::zeros);
+    for(int i=0; i<nx; i++){
+        for(int j=0; j<ny; j++){
+            for(int k=0; k<nz; k++){
+                mymat(i,j,k) = gsl_ran_gaussian(rg, var);
+            }
         }
     }
 
@@ -578,110 +640,29 @@ void Generator::step(double dt)
             }
         }
 
-        //Compute normalized q-space correlation function
-        arma::cube is_filled(nx, ny, nz, arma::fill::zeros);
-        arma::cube cq(nx, ny, nz, arma::fill::zeros);
-        for(int i=0; i<nx; i++) {
-            for(int j=0; j<ny; j++) {
-                for(int k=0; k<nz; k++) {
-                    //check a bunch of conditions to enforce DFT symmetry
-                    if(is_filled((nx-i)%nx,(ny-j)%ny,(nz-k)%nz)==1) {
-                        cq(i,j,k) = cq((nx-i)%nx,(ny-j)%ny,(nz-k)%nz);
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled(i,(ny-j)%ny,(nz-k)%nz)==1) {
-                        cq(i,j,k) = cq(i,(ny-j)%ny,(nz-k)%nz);
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled((nx-i)%nx,j,(nz-k)%nz)==1) {
-                        cq(i,j,k) = cq((nx-i)%nx,j,(nz-k)%nz);
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled((nx-i)%nx,(ny-j)%ny,k)==1) {
-                        cq(i,j,k) = cq((nx-i)%nx,(ny-j)%ny,k);
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled((nx-i)%nx,j,k)==1) {
-                        cq(i,j,k) = cq((nx-i)%nx,j,k);
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled(i,(ny-j)%ny,k)==1) {
-                        cq(i,j,k) = cq(i,(ny-j)%ny,k);
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled(i,j,(nz-k)%nz)==1) {
-                        cq(i,j,k) = cq(i,j,(nz-k)%nz);
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else {
-                        double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx) + j*j/(Ly*Ly) + k*k/(Lz*Lz));
-                        cq(i,j,k) = 8*M_PI*lambda*lambda*lambda*Lx*Ly*Lz/((1+lambda*lambda*q_sq)*(1+lambda*lambda*q_sq));
-                        is_filled(i,j,k)=1.0;
-                    }
-                }
-            }
-        }
-        cq = cq/(arma::accu(cq)/(Lx*Ly*Lz)); //normalize such that f(r=0)=1
-        //std::cout << "Lx, Ly, Lz: " << Lx << " " << Ly << " " << Lz << std::endl;
-        //cq.save("cq_test.mat", arma::arma_ascii);
-        //std::cout << "should be 1: " << arma::accu(cq)/(nx*nz*nz) << std::endl;
+        //White noise array in real space
+        arma::cube real_white_noise_x = get_rnd_gauss_arr_3d(1.0);
+        arma::cube real_white_noise_y = get_rnd_gauss_arr_3d(1.0);
+        arma::cube real_white_noise_z = get_rnd_gauss_arr_3d(1.0);
+
+        //Take Fourier transform
+        //Multiply by sqrt(N/2) to get unit variance in reciprocal space
+        arma::cx_cube fourier_white_noise_x = sqrt(nx*ny*nz/2)*do_fourier_3d(real_white_noise_x);
+        arma::cx_cube fourier_white_noise_y = sqrt(nx*ny*nz/2)*do_fourier_3d(real_white_noise_y);
+        arma::cx_cube fourier_white_noise_z = sqrt(nx*ny*nz/2)*do_fourier_3d(real_white_noise_z);
+
+        //Get spatial correlation function
+        arma::cube cq = get_cq_3d();
 
         //Compute noise increment
-        is_filled.zeros(nx, ny, nz);
+        //Convolve white noise with correlation matrix
         for(int i=0; i<nx; i++) {
             for(int j=0; j<ny; j++) {
                 for(int k=0; k<nz; k++) {
-                    //Check for pairs of values that are complex conjugates by symmetry
-                    if(is_filled((nx-i)%nx,(ny-j)%ny,(nz-k)%nz)==1) {                    
-                        for(int mu=0; mu<3; mu++) {
-                            noise_incr(i,j,k)(mu) = std::conj(noise_incr((nx-i)%nx,(ny-j)%ny,(nz-k)%nz)(mu));
-                        }
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled((nx-i)%nx,(ny-j)%ny,k)==1) {                    
-                        for(int mu=0; mu<3; mu++) {
-                            noise_incr(i,j,k)(mu) = std::conj(noise_incr((nx-i)%nx,(ny-j)%ny,k)(mu));
-                        }
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled((nx-i)%nx,j,(nz-k)%nz)==1) {                    
-                        for(int mu=0; mu<3; mu++) {
-                            noise_incr(i,j,k)(mu) = std::conj(noise_incr((nx-i)%nx,j,(nz-k)%nz)(mu));
-                        }
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled(i,(ny-j)%ny,(nz-k)%nz)==1) {                    
-                        for(int mu=0; mu<3; mu++) {
-                            noise_incr(i,j,k)(mu) = std::conj(noise_incr(i,(ny-j)%ny,(nz-k)%nz)(mu));
-                        }
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled((nx-i)%nx,j,k)==1) {                    
-                        for(int mu=0; mu<3; mu++) {
-                            noise_incr(i,j,k)(mu) = std::conj(noise_incr((nx-i)%nx,j,k)(mu));
-                        }
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled(i,(ny-j)%ny,k)==1) {                    
-                        for(int mu=0; mu<3; mu++) {
-                            noise_incr(i,j,k)(mu) = std::conj(noise_incr(i,(ny-j)%ny,k)(mu));
-                        }
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else if(is_filled(i,j,(nz-k)%nz)==1) {                    
-                        for(int mu=0; mu<3; mu++) {
-                            noise_incr(i,j,k)(mu) = std::conj(noise_incr(i,j,(nz-k)%nz)(mu));
-                        }
-                        is_filled(i,j,k)=1.0;
-                    }
-                    else {
-                        double prefactor = sqrt(2*D*dt*Lx*Ly*Lz*cq(i,j,k)/tau);
-                        //double prefactor = sqrt(2*D*dt*Lx*Ly*Lz/tau);
-                        for(int mu=0; mu<3; mu++) {
-                            noise_incr(i,j,k)(mu) = prefactor*get_rnd_gauss_fourier_3D(i,j,k);
-                        }
-                        is_filled(i,j,k)=1.0;
-                    }
+                    double prefactor = sqrt(2*D*dt*Lx*Ly*Lz*cq(i,j,k)/tau);
+                    noise_incr(i,j,k)(0) = prefactor*fourier_white_noise_x(i,j,k);
+                    noise_incr(i,j,k)(1) = prefactor*fourier_white_noise_y(i,j,k);
+                    noise_incr(i,j,k)(2) = prefactor*fourier_white_noise_z(i,j,k);
                 }
             }
         }
@@ -717,28 +698,8 @@ void Generator::step(double dt)
         arma::cx_mat fourier_white_noise_x = sqrt(nx*ny/2)*do_fourier_2d(real_white_noise_x);
         arma::cx_mat fourier_white_noise_y = sqrt(nx*ny/2)*do_fourier_2d(real_white_noise_y);
 
-        //Get k vectors
-        arma::vec kVec_x(nx, arma::fill::zeros);
-        for(int i=0; i<nx; i++){
-            if(i<=nx/2) kVec_x(i) = (2*M_PI/Lx)*i;
-            else kVec_x(i) = (2*M_PI/Lx)*(i-nx);
-        }
-        arma::vec kVec_y(ny, arma::fill::zeros);
-        for(int i=0; i<ny; i++){
-            if(i<=ny/2) kVec_y(i) = (2*M_PI/Ly)*i;
-            else kVec_y(i) = (2*M_PI/Ly)*(i-ny);
-        }
-
-        //Compute normalized q-space correlation function
-        arma::mat cq(nx, ny, arma::fill::zeros);
-
-        for(int i=0; i<nx; i++) {
-            for(int j=0; j<ny; j++) {
-                double q_sq = kVec_x[i]*kVec_x[i] + kVec_y[j]*kVec_y[j];
-                cq(i,j) = 2*M_PI*lambda*lambda*Lx*Ly/pow(1+lambda*lambda*q_sq,3.0/2.0);
-            }
-        }
-        cq = cq/(arma::accu(cq)/(Lx*Ly)); //normalize such that f(r=0)=1
+        //Get spatial correlation function
+        arma::mat cq = get_cq_2d();
 
         //Compute noise increment
         //Convolve white noise with correlation matrix
@@ -765,21 +726,25 @@ void Generator::step(double dt)
     else if (dim==1){
         arma::cx_vec noise_incr(nx);
 
-        //Compute normalized q-space correlation function
-        arma::vec cq(nx, arma::fill::zeros);
+        //White noise array in real space
+        arma::vec real_white_noise_x = get_rnd_gauss_arr_1d(1.0);
+
+        //Take Fourier transform
+        //Multiply by sqrt(N/2) to get unit variance in reciprocal space
+        arma::cx_vec fourier_white_noise_x = sqrt(nx/2)*do_fourier_1d(real_white_noise_x);
+
+        //Get spatial correlation function
+        arma::vec cq = get_cq_1d();
+
+        //Compute noise increment
+        //Convolve white noise with correlation matrix
         for(int i=0; i<nx; i++) {
-            double q_sq = 4*M_PI*M_PI*(i*i/(Lx*Lx));
-            cq(i) = 2*lambda/(1+lambda*lambda*q_sq);
-        }
-        cq = cq/(arma::accu(cq)/(nx)); //normalize such that f(r=0)=1
-
-        for (int i=0; i<nx/2+1; i++) {
             double prefactor = sqrt(2*D*dt*Lx*cq(i)/tau);
-            noise_incr(i) = prefactor*get_rnd_gauss_fourier_1D(i);
-            if(i>0) noise_incr(nx-i) = std::conj(noise_incr(i));
+            noise_incr(i) = prefactor*fourier_white_noise_x(i);
         }
 
-        for (int i=0; i<nx; i++) {
+        //Update noise according to its OU dynamics
+        for(int i=0; i<nx; i++) {
             xi_q(i)(0) += (-dt)/tau*xi_q(i)(0) + noise_incr(i);
         }
     }
