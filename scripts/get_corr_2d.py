@@ -12,7 +12,7 @@ import numba
 def main():
 
     in_folder = sys.argv[1]
-    out_folder = sys.argv[2]
+    out_folder = in_folder
 
     data = h5py.File(in_folder + '/noise_traj.h5', 'r')
 
@@ -56,7 +56,7 @@ def main():
     corr_file.create_dataset('/parameters/D', data=D)
 
     #Compute C(t)
-    ct0 = get_corr_t0_test(noise, frame_diff_max)
+    ct0 = get_corr_t0_test(noise)
     print('initial frame correlation: ', ct0)
     c_t = get_corr_t(noise, frame_diff_max)
     print('time zero corr: ', c_t[0])
@@ -64,8 +64,7 @@ def main():
     corr_file.create_dataset('/corr_t/value', data=c_t) 
 
     #Compute C(r)
-    #c_r, pos = get_corr_r(noise, dims, dx)
-    c_r, pos = get_corr_r(noise, dims, dx)
+    c_r, pos = get_corr_r(noise, dx)
     print(np.unravel_index(np.argmax(c_r), c_r.shape))
     #print(pos)
     corr_file.create_dataset('/corr_r/value', data=c_r)
@@ -87,7 +86,7 @@ def get_corr_t(xi_mat, tmax):
     return c_t
 
 @numba.jit(nopython=True) 
-def get_corr_r(xi_mat, dims, dx):
+def get_corr_r(xi_mat, dx):
     tmax = xi_mat.shape[0]
     nx = xi_mat.shape[1]
     ny = xi_mat.shape[2]
@@ -155,7 +154,7 @@ def get_corr_r(xi_mat, dims, dx):
     return c_r, pos
                                                   
 @numba.jit(nopython=True) 
-def get_corr_t0_test(xi_mat, tmax):
+def get_corr_t0_test(xi_mat):
     nx = xi_mat.shape[1]
     ny = xi_mat.shape[2]
     ndim = xi_mat.shape[3]

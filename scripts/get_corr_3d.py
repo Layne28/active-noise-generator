@@ -12,11 +12,9 @@ import numba
 def main():
 
     in_folder = sys.argv[1]
-    out_folder = sys.argv[2]
+    out_folder = in_folder
 
     data = h5py.File(in_folder + '/noise_traj.h5', 'r')
-
-    tau_max = 5 #max time to which to compute correlation function
 
     if not os.path.exists(out_folder):
         print('Output folder does not exist. Creating it now.')
@@ -31,6 +29,8 @@ def main():
     tau = np.array(data['/parameters/tau'])
     Lambda = np.array(data['/parameters/lambda'])
     D = np.array(data['/parameters/D'])
+
+    tau_max = 5*tau #max time to which to compute correlation function
 
     data.close()
 
@@ -57,7 +57,7 @@ def main():
     corr_file.create_dataset('/parameters/D', data=D)
 
     #Compute C(t)
-    ct0 = get_corr_t0_test(noise, frame_diff_max)
+    ct0 = get_corr_t0_test(noise)
     print('intial frame correlation: ', ct0)
     c_t = get_corr_t(noise, frame_diff_max)
     print('time zero corr: ', c_t[0])
@@ -65,8 +65,7 @@ def main():
     corr_file.create_dataset('/corr_t/value', data=c_t) 
 
     #Compute C(r)
-    
-    c_r, pos = get_corr_r(noise, dims, dx)
+    c_r, pos = get_corr_r(noise, dx)
     print(np.unravel_index(np.argmax(c_r), c_r.shape))
     #print(pos)
     corr_file.create_dataset('/corr_r/value', data=c_r)
@@ -79,7 +78,6 @@ def get_corr_t(xi_mat, tmax):
     ny = xi_mat.shape[2]
     nz = xi_mat.shape[3]
     ndim = xi_mat.shape[4]
-    print('nx, ny, nz, ndim: ', nx, ny, nz, ndim)
     c_t = np.zeros(tmax)
     for t in range(tmax):
         #take inner product of xi_r(t) and xi_r(t+delta_t) and average over t and r
@@ -92,7 +90,7 @@ def get_corr_t(xi_mat, tmax):
     return c_t
 
 @numba.jit(nopython=True) 
-def get_corr_r(xi_mat, dims, dx):
+def get_corr_r(xi_mat, dx):
     tmax = xi_mat.shape[0]
     nx = xi_mat.shape[1]
     ny = xi_mat.shape[2]
@@ -130,9 +128,9 @@ def get_corr_r(xi_mat, dims, dx):
                             if zind>=(nz//2):
                                 zind -= nz
 
-                            pos[xind+nx//2, yind+ny//2, zind+nz//2, 0] = dx*xind
-                            pos[xind+nx//2, yind+ny//2, zind+nz//2, 1] = dx*yind
-                            pos[xind+nx//2, yind+ny//2, zind+nz//2, 2] = dx*zind
+                            pos[xind+nx//2, yind+ny//2, zind+nz//2, 0] = dx[0]*xind
+                            pos[xind+nx//2, yind+ny//2, zind+nz//2, 1] = dx[1]*yind
+                            pos[xind+nx//2, yind+ny//2, zind+nz//2, 2] = dx[3]*zind
                             counts[xind+nx//2, yind+ny//2, zind+nz//2] += 1
 
     print('r=0 count: ', counts[nx//2,ny//2,nz//2])
@@ -177,7 +175,7 @@ def get_corr_r(xi_mat, dims, dx):
     return c_r, pos
                                                   
 @numba.jit(nopython=True) 
-def get_corr_t0_test(xi_mat, tmax):
+def get_corr_t0_test(xi_mat):
     nx = xi_mat.shape[1]
     ny = xi_mat.shape[2]
     nz = xi_mat.shape[3]
