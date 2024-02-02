@@ -168,7 +168,7 @@ def get_corr_t0_test(xi_mat):
             for d in range(ndim): #sum over dimensions
                 c_0 += xi_mat[0,i,j,d]*xi_mat[0,i,j,d]
     c_0 /= (nx*ny*ndim)
-    print(c_0∆)
+    print(c_0)
     return c_0
 
 main()
