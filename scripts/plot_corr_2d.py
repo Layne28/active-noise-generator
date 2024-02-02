@@ -6,13 +6,14 @@ import sys
 
 myfile = sys.argv[1]
 
-data = h5py.File(myfile)
+data = h5py.File(myfile,'r')
 
 c_t = np.array(data['/corr_t/value'])
 times = np.array(data['/corr_t/time'])
 tau = np.array(data['/parameters/tau'])
 Lambda = np.array(data['/parameters/lambda'])
 D = np.array(data['/parameters/D'])
+n = np.array(data['/grid/dimensions'])
 
 c_r = np.array(data['/corr_r/value'])
 positions = np.array(data['/corr_r/position'])
@@ -32,7 +33,7 @@ plt.xlabel(r'$t$')
 plt.ylabel(r'$C(t)$')
 #plt.xlim([0,5])
 plt.legend()
-plt.savefig('./time_corr.png')
+plt.savefig('./plots/2d/time_corr_nx=%d_ny=%d_tau=%f_lambda=%f.png' % (n[0], n[1], tau, Lambda))
 
 fig, ax = plt.subplots(1,2)
 sim = ax[0].imshow(c_r,vmin=0,vmax=1)#, extent=positions)
@@ -50,6 +51,7 @@ ax[1].set_title(r'theory')
 #plt.xlim([0,5])
 #plt.legend()
 plt.tight_layout()
-plt.savefig('./spat_corr.png')
+plt.savefig('./plots/2d/spat_corr_nx=%d_ny=%d_tau=%f_lambda=%f.png' % (n[0], n[1], tau, Lambda))
+
 
 plt.show()

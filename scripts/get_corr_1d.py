@@ -11,10 +11,11 @@ import numba
 
 def main():
 
-    in_folder = sys.argv[1]
-    out_folder = in_folder
+    in_file = sys.argv[1] #expects noise_traj.h5
+    out_folder = "/".join(in_file.split('/')[:-1])
+    print(out_folder)
 
-    data = h5py.File(in_folder + '/noise_traj.h5', 'r')
+    data = h5py.File(in_file, 'r')
 
     if not os.path.exists(out_folder):
         print('Output folder does not exist. Creating it now.')

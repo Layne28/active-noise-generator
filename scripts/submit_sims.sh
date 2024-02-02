@@ -9,14 +9,13 @@
 
 module load share_modules/ANACONDA/5.3_py3
 
-conf_file=$1
+input_file=$1
 nsteps=$2
 seed=$3
-seedfile=$4
 
-echo "Running active noise generator with conf file: $conf_file"
+echo "Running active noise generator with input file: $input_file"
 
 run_dir="/home/laynefrechette/active-noise/active-noise-generator/bin/"
 
-$run_dir/active_noise_generator $conf_file $nsteps $seed $seedfile
+$run_dir/active_noise_generator $input_file $nsteps $seed
 

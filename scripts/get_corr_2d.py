@@ -11,14 +11,17 @@ import numba
 
 def main():
 
-    in_folder = sys.argv[1]
-    out_folder = in_folder
+    in_file = sys.argv[1] #expects noise_traj.h5
+    out_folder = "/".join(in_file.split('/')[:-1])
+    print(out_folder)
 
-    data = h5py.File(in_folder + '/noise_traj.h5', 'r')
+    data = h5py.File(in_file, 'r')
 
-    if not os.path.exists(out_folder):
+    if out_folder != "" and not os.path.exists(out_folder):
         print('Output folder does not exist. Creating it now.')
         os.makedirs(out_folder)
+    if out_folder == "":
+        out_folder = "."
 
     times = np.array(data['/noise/time'])
     noise_x = np.array(data['/noise/value/x'])
@@ -165,6 +168,7 @@ def get_corr_t0_test(xi_mat):
             for d in range(ndim): #sum over dimensions
                 c_0 += xi_mat[0,i,j,d]*xi_mat[0,i,j,d]
     c_0 /= (nx*ny*ndim)
+    print(c_0∆)
     return c_0
 
 main()
