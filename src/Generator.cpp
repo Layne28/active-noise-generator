@@ -14,8 +14,17 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
 
     for(int i=0; i<3; i++) spacing.push_back(1.0);
     if(theParams.is_key("dx")) spacing[0] = std::stod(theParams.get_value("dx"));
-    if(theParams.is_key("dy")) spacing[1] = std::stod(theParams.get_value("dy"));
-    if(theParams.is_key("dz")) spacing[2] = std::stod(theParams.get_value("dz"));
+    if(theParams.is_key("dy")){
+        spacing[1] = std::stod(theParams.get_value("dy"));
+    }else if(theParams.is_key("dx")){
+        spacing[1] = spacing[0];
+    }
+    if(theParams.is_key("dz")){
+        spacing[2] = std::stod(theParams.get_value("dz"));
+    } 
+    else if(theParams.is_key("dx")){
+        spacing[2] = spacing[0];
+    }
 
     Lx = nx*spacing[0];
     Ly = ny*spacing[1];
@@ -393,7 +402,7 @@ arma::cx_vec Generator::do_fourier_1d(arma::vec real_arr){
 
     fftw_execute(px); 
 
-    fourier_arr = fourier_arr/(Lx);
+    fourier_arr = fourier_arr/(nx);
 
     fftw_destroy_plan(px);
 
@@ -418,7 +427,7 @@ arma::cx_mat Generator::do_fourier_2d(arma::mat real_arr){
 
     fftw_execute(px); 
 
-    fourier_arr = fourier_arr/(Lx*Ly);
+    fourier_arr = fourier_arr/(nx*ny);
 
     fftw_destroy_plan(px);
 
@@ -445,7 +454,7 @@ arma::cx_cube Generator::do_fourier_3d(arma::cube real_arr){
 
     fftw_execute(px); 
 
-    fourier_arr = fourier_arr/(Lx*Ly*Lz);
+    fourier_arr = fourier_arr/(nx*ny*nz);
 
     fftw_destroy_plan(px);
 
@@ -724,7 +733,7 @@ void Generator::step(double dt)
 
     //1D
     else if (dim==1){
-        arma::cx_vec noise_incr(nx);
+        arma::cx_vec noise_incr(nx,arma::fill::zeros);
 
         //White noise array in real space
         arma::vec real_white_noise_x = get_rnd_gauss_arr_1d(1.0);

@@ -15,7 +15,7 @@ def main():
     out_folder = "/".join(in_file.split('/')[:-1])
     print(out_folder)
 
-    data = h5py.File(in_file, 'r')
+    data = h5py.File(in_file)
 
     if out_folder != "" and not os.path.exists(out_folder):
         print('Output folder does not exist. Creating it now.')

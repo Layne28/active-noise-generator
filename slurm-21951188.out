@@ -1,0 +1,8 @@
+/ocean/projects/mcb170063p/lfrechet/active-noise/2d/nx=200_ny=200/tau=1000.000000/lambda=10.000000/seed=1/
+Current directory: 
+/ocean/projects/mcb170063p/lfrechet/active-noise/2d/nx=200_ny=200/tau=1000.000000/lambda=10.000000/seed=1
+Computing correlation function with dim=2
+/ocean/projects/mcb170063p/lfrechet/active-noise/2d/nx=200_ny=200/tau=1000.000000/lambda=10.000000/seed=1/
+/ocean/projects/mcb170063p/lfrechet/active-noise/2d/nx=200_ny=200/tau=1000.000000/lambda=10.000000/seed=1//noise_traj.h5
+/var/spool/slurm/d/job21951188/slurm_script: line 39: 64640 Killed                  python "get_corr_${dim}d.py" $filename
+slurmstepd: error: Detected 1 oom-kill event(s) in StepId=21951188.batch. Some of your processes may have been killed by the cgroup out-of-memory handler.
