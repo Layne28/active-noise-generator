@@ -12,6 +12,8 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
 
     if(theParams.is_key("dim")) dim = std::stoi(theParams.get_value("dim"));
 
+    if(theParams.is_key("is_incompressible")) is_incompressible = std::stoi(theParams.get_value("is_incompressible"));
+
     for(int i=0; i<3; i++) spacing.push_back(1.0);
     if(theParams.is_key("dx")) spacing[0] = std::stod(theParams.get_value("dx"));
     if(theParams.is_key("dy")){
@@ -32,6 +34,11 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
 
     //set RNG
     rg = the_rg;
+
+    //Check compressibility is consistent with dim
+    if (dim==1 && is_incompressible==1){
+        std::cout << "WARNING: incompressibility cannot be enforced in 1d." << std::endl;
+    }
 
     //Initialize noise differently for different no. of dimensions
 
@@ -68,6 +75,27 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
                     xi_q(i,j,k)(0) = prefactor*fourier_white_noise_x(i,j,k);
                     xi_q(i,j,k)(1) = prefactor*fourier_white_noise_y(i,j,k);
                     xi_q(i,j,k)(2) = prefactor*fourier_white_noise_z(i,j,k);
+                    if (is_incompressible==1){
+                        //Get k vectors
+                        arma::vec kVec(3, arma::fill::zeros);
+                        kVec(0) = (2*M_PI/Lx)*(i-nx);
+                        kVec(1) = (2*M_PI/Ly)*(j-ny);
+                        kVec(2) = (2*M_PI/Lz)*(k-nz);
+                        //Get projection operator
+                        arma::mat projector = arma::mat(3,3,arma::fill::eye);
+                        if (!(kVec(0)==0.0 && kVec(1)==0.0 && kVec(2)==0.0)){
+                            arma::mat term2(3,3,arma::fill::zeros);
+                            double denom = arma::dot(kVec, kVec);
+                            for (int mu=0; mu<3; mu++){
+                                for (int nu=0; nu<3; nu++){
+                                    term2(mu,nu) = kVec(mu)*kVec(nu)/denom;
+                                }
+                            }
+                            projector = projector - term2;
+                        }
+                        //Apply projection operator
+                        xi_q(i,j,k) = projector*xi_q(i,j,k);
+                    }
                 }
             }
         }
@@ -100,6 +128,26 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
                 double prefactor = sqrt(D*Lx*Ly*cq(i,j));
                 xi_q(i,j)(0) = prefactor*fourier_white_noise_x(i,j);
                 xi_q(i,j)(1) = prefactor*fourier_white_noise_y(i,j);
+                if (is_incompressible==1){
+                    //Get k vectors
+                    arma::vec kVec(2, arma::fill::zeros);
+                    kVec(0) = (2*M_PI/Lx)*(i-nx);
+                    kVec(1) = (2*M_PI/Ly)*(j-ny);
+                    //Get projection operator
+                    arma::mat projector = arma::mat(2,2,arma::fill::eye);
+                    if (!(kVec(0)==0.0 && kVec(1)==0.0)){
+                        arma::mat term2(2,2,arma::fill::zeros);
+                        double denom = arma::dot(kVec, kVec);
+                        for (int mu=0; mu<2; mu++){
+                            for (int nu=0; nu<2; nu++){
+                                term2(mu,nu) = kVec(mu)*kVec(nu)/denom;
+                            }
+                        }
+                        projector = projector - term2;
+                    }
+                    //Apply projection operator
+                    xi_q(i,j) = projector*xi_q(i,j);
+                }
             }
         }
     }
@@ -672,6 +720,27 @@ void Generator::step(double dt)
                     noise_incr(i,j,k)(0) = prefactor*fourier_white_noise_x(i,j,k);
                     noise_incr(i,j,k)(1) = prefactor*fourier_white_noise_y(i,j,k);
                     noise_incr(i,j,k)(2) = prefactor*fourier_white_noise_z(i,j,k);
+                    if (is_incompressible==1){
+                        //Get k vectors
+                        arma::vec kVec(3, arma::fill::zeros);
+                        kVec(0) = (2*M_PI/Lx)*(i-nx);
+                        kVec(1) = (2*M_PI/Ly)*(j-ny);
+                        kVec(2) = (2*M_PI/Lz)*(k-nz);
+                        //Get projection operator
+                        arma::mat projector = arma::mat(3,3,arma::fill::eye);
+                        if (!(kVec(0)==0.0 && kVec(1)==0.0 && kVec(2)==0.0)){
+                            arma::mat term2(3,3,arma::fill::zeros);
+                            double denom = arma::dot(kVec, kVec);
+                            for (int mu=0; mu<3; mu++){
+                                for (int nu=0; nu<3; nu++){
+                                    term2(mu,nu) = kVec(mu)*kVec(nu)/denom;
+                                }
+                            }
+                            projector = projector - term2;
+                        }
+                        //Apply projection operator
+                        noise_incr(i,j,k) = projector*noise_incr(i,j,k);
+                    }
                 }
             }
         }
@@ -717,6 +786,26 @@ void Generator::step(double dt)
                 double prefactor = sqrt(2*D*dt*Lx*Ly*cq(i,j)/tau);
                 noise_incr(i,j)(0) = prefactor*fourier_white_noise_x(i,j);
                 noise_incr(i,j)(1) = prefactor*fourier_white_noise_y(i,j);
+                if (is_incompressible==1){
+                    //Get k vectors
+                    arma::vec kVec(2, arma::fill::zeros);
+                    kVec(0) = (2*M_PI/Lx)*(i-nx);
+                    kVec(1) = (2*M_PI/Ly)*(j-ny);
+                    //Get projection operator
+                    arma::mat projector = arma::mat(2,2,arma::fill::eye);
+                    if (!(kVec(0)==0.0 && kVec(1)==0.0)){
+                        arma::mat term2(2,2,arma::fill::zeros);
+                        double denom = arma::dot(kVec, kVec);
+                        for (int mu=0; mu<2; mu++){
+                            for (int nu=0; nu<2; nu++){
+                                term2(mu,nu) = kVec(mu)*kVec(nu)/denom;
+                            }
+                        }
+                        projector = projector - term2;
+                    }
+                    //Apply projection operator
+                    noise_incr(i,j) = projector*noise_incr(i,j);
+                }
             }
         }
 

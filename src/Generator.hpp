@@ -28,6 +28,8 @@ public:
     double D = 1.0;
     int dim = 3;
 
+    int is_incompressible = 0;
+
     int nx = 4;
     int ny = 4;
     int nz = 4;
