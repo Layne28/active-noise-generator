@@ -78,9 +78,13 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
                     if (is_incompressible==1){
                         //Get k vectors
                         arma::vec kVec(3, arma::fill::zeros);
-                        kVec(0) = (2*M_PI/Lx)*(i-nx);
-                        kVec(1) = (2*M_PI/Ly)*(j-ny);
-                        kVec(2) = (2*M_PI/Lz)*(k-nz);
+                        if (i<=nx/2) kVec(0) = (2*M_PI/Lx)*i;
+                        else kVec(0) = (2*M_PI/Lx)*(i-nx);
+                        if (j<=ny/2) kVec(1) = (2*M_PI/Ly)*j;
+                        else kVec(1) = (2*M_PI/Ly)*(j-ny);
+                        if (k<=nz/2) kVec(2) = (2*M_PI/Lz)*k;
+                        else kVec(2) = (2*M_PI/Lz)*(k-nz);
+
                         //Get projection operator
                         arma::mat projector = arma::mat(3,3,arma::fill::eye);
                         if (!(kVec(0)==0.0 && kVec(1)==0.0 && kVec(2)==0.0)){
@@ -131,8 +135,11 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
                 if (is_incompressible==1){
                     //Get k vectors
                     arma::vec kVec(2, arma::fill::zeros);
-                    kVec(0) = (2*M_PI/Lx)*(i-nx);
-                    kVec(1) = (2*M_PI/Ly)*(j-ny);
+                    if (i<=nx/2) kVec(0) = (2*M_PI/Lx)*i;
+                    else kVec(0) = (2*M_PI/Lx)*(i-nx);
+                    if (j<=ny/2) kVec(1) = (2*M_PI/Ly)*j;
+                    else kVec(1) = (2*M_PI/Ly)*(j-ny);
+
                     //Get projection operator
                     arma::mat projector = arma::mat(2,2,arma::fill::eye);
                     if (!(kVec(0)==0.0 && kVec(1)==0.0)){
@@ -147,6 +154,16 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
                     }
                     //Apply projection operator
                     xi_q(i,j) = projector*xi_q(i,j);
+                    arma::cx_vec ckVec(2, arma::fill::zeros);
+                    if (i<=nx/2) ckVec(0) = (2*M_PI/Lx)*i;
+                    else ckVec(0) = (2*M_PI/Lx)*(i-nx);
+                    if (j<=ny/2) ckVec(1) = (2*M_PI/Ly)*j;
+                    else ckVec(1) = (2*M_PI/Ly)*(j-ny);
+                    std::complex<double> check = arma::dot(ckVec, xi_q(i,j));
+                    std::cout << check << std::endl;
+                    if (std::fabs(check)>1e-8){
+                        std::cout << "WARNING: " << check << std::endl;
+                    }
                 }
             }
         }
@@ -723,9 +740,13 @@ void Generator::step(double dt)
                     if (is_incompressible==1){
                         //Get k vectors
                         arma::vec kVec(3, arma::fill::zeros);
-                        kVec(0) = (2*M_PI/Lx)*(i-nx);
-                        kVec(1) = (2*M_PI/Ly)*(j-ny);
-                        kVec(2) = (2*M_PI/Lz)*(k-nz);
+                        if (i<=nx/2) kVec(0) = (2*M_PI/Lx)*i;
+                        else kVec(0) = (2*M_PI/Lx)*(i-nx);
+                        if (j<=ny/2) kVec(1) = (2*M_PI/Ly)*j;
+                        else kVec(1) = (2*M_PI/Ly)*(j-ny);
+                        if (k<=nz/2) kVec(2) = (2*M_PI/Lz)*k;
+                        else kVec(2) = (2*M_PI/Lz)*(k-nz);
+
                         //Get projection operator
                         arma::mat projector = arma::mat(3,3,arma::fill::eye);
                         if (!(kVec(0)==0.0 && kVec(1)==0.0 && kVec(2)==0.0)){
@@ -788,9 +809,13 @@ void Generator::step(double dt)
                 noise_incr(i,j)(1) = prefactor*fourier_white_noise_y(i,j);
                 if (is_incompressible==1){
                     //Get k vectors
+                    //TODO: make this its own function
                     arma::vec kVec(2, arma::fill::zeros);
-                    kVec(0) = (2*M_PI/Lx)*(i-nx);
-                    kVec(1) = (2*M_PI/Ly)*(j-ny);
+                    if (i<=nx/2) kVec(0) = (2*M_PI/Lx)*i;
+                    else kVec(0) = (2*M_PI/Lx)*(i-nx);
+                    if (j<=ny/2) kVec(1) = (2*M_PI/Ly)*j;
+                    else kVec(1) = (2*M_PI/Ly)*(j-ny);
+
                     //Get projection operator
                     arma::mat projector = arma::mat(2,2,arma::fill::eye);
                     if (!(kVec(0)==0.0 && kVec(1)==0.0)){
@@ -815,6 +840,15 @@ void Generator::step(double dt)
                 for(int mu=0; mu<2; mu++) {
                     xi_q(i,j)(mu) += (-dt)/tau*xi_q(i,j)(mu) + noise_incr(i,j)(mu);
                     //xi_q(i,j)(mu) = exp(-dt/tau)*xi_q(i,j)(mu) + noise_incr(i,j)(mu); //''exact'' version
+                }
+                arma::cx_vec ckVec(2, arma::fill::zeros);
+                if (i<=nx/2) ckVec(0) = (2*M_PI/Lx)*i;
+                else ckVec(0) = (2*M_PI/Lx)*(i-nx);
+                if (j<=ny/2) ckVec(1) = (2*M_PI/Ly)*j;
+                else ckVec(1) = (2*M_PI/Ly)*(j-ny);
+                std::complex<double> check = arma::dot(ckVec, xi_q(i,j));
+                if (std::fabs(check)>1e-8 && is_incompressible==1){
+                    std::cout << "WARNING: " << check << std::endl;
                 }
             }
         }

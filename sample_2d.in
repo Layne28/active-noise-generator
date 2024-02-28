@@ -1,18 +1,19 @@
 #Generator
-dim = 3
-dx = 3.4
-nx = 5
-ny = 5
+dim = 2
+dx = 1.0
+nx = 50
+ny = 50
 nz = 5
-tau = 0.1
-lambda = 1.0
+tau = 10000.0
+lambda = 5.0
 D = 1.0
 do_fft = 1
+is_incompressible=1
 
 #Solver 
 dt = 0.001
 
 #Observer
-output_dir = testdir
-freq = 100
+output_dir = incompressible_testdir
+freq = 1000
 

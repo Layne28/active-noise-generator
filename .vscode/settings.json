@@ -61,6 +61,7 @@
         "regex": "cpp",
         "set": "cpp",
         "future": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "armadillo": "cpp"
     }
 }
