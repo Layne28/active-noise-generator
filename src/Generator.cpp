@@ -153,6 +153,11 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
                         projector = projector - term2;
                     }
                     //Apply projection operator
+                    int do_test = 0;
+                    if(do_test==1){
+                        xi_q(i,j)(0) = exp(-kVec(1)*kVec(1));
+                        xi_q(i,j)(1) = exp(-kVec(0)*kVec(0));
+                    }
                     xi_q(i,j) = projector*xi_q(i,j);
                     arma::cx_vec ckVec(2, arma::fill::zeros);
                     if (i<=nx/2) ckVec(0) = (2*M_PI/Lx)*i;
@@ -160,7 +165,7 @@ Generator::Generator(ParamDict &theParams, gsl_rng *&the_rg)
                     if (j<=ny/2) ckVec(1) = (2*M_PI/Ly)*j;
                     else ckVec(1) = (2*M_PI/Ly)*(j-ny);
                     std::complex<double> check = arma::dot(ckVec, xi_q(i,j));
-                    std::cout << check << std::endl;
+                    //std::cout << check << std::endl;
                     if (std::fabs(check)>1e-8){
                         std::cout << "WARNING: " << check << std::endl;
                     }
@@ -616,7 +621,9 @@ arma::mat Generator::get_cq_2d(){
     for(int i=0; i<nx; i++) {
         for(int j=0; j<ny; j++) {
             double q_sq = kVec_x[i]*kVec_x[i] + kVec_y[j]*kVec_y[j];
-            cq(i,j) = 2*M_PI*lambda*lambda*Lx*Ly/pow(1+lambda*lambda*q_sq,3.0/2.0);
+            //cq(i,j) = 2*M_PI*lambda*lambda*Lx*Ly/pow(1+lambda*lambda*q_sq,3.0/2.0);
+            cq(i,j) = 1/pow(1+lambda*lambda*q_sq,3.0/2.0);
+            //cq(i,j) = exp(-lambda*lambda*q_sq);
         }
     }
     cq = cq/(arma::accu(cq)/(Lx*Ly)); //normalize such that f(r=0)=1
@@ -817,6 +824,11 @@ void Generator::step(double dt)
                     else kVec(1) = (2*M_PI/Ly)*(j-ny);
 
                     //Get projection operator
+                    int do_test = 0;
+                    if(do_test==1){
+                        noise_incr(i,j)(0) = exp(-kVec(1)*kVec(1));
+                        noise_incr(i,j)(1) = exp(-kVec(0)*kVec(0));
+                    }
                     arma::mat projector = arma::mat(2,2,arma::fill::eye);
                     if (!(kVec(0)==0.0 && kVec(1)==0.0)){
                         arma::mat term2(2,2,arma::fill::zeros);

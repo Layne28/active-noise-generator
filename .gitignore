@@ -11,3 +11,4 @@ input_files/*
 seeds/*
 conf/*
 *.h5
+*.png
